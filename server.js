@@ -6,15 +6,18 @@ const path = require("path");
 const app = express();
 
 app.use(express.static(path.join(__dirname, "public"))); // Sirve archivos estáticos desde "public"
-  
+app.use(express.static('public'));
+
 const PORT = process.env.PORT || 3000; // Render asigna un puerto automáticamente
-app.listen(PORT, () => {
-  console.log(`Servidor en http://localhost:${PORT}`);
-});
+
 
 // Ruta para servir el HTML principal
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "presentacion.html"));
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor en http://localhost:${PORT}`);
 });
 
 // Configurar la sesión
@@ -54,8 +57,9 @@ app.get("/auth/google/callback",
   }
 );
 
-// Servidor corriendo en puerto 3000
-app.listen(3000, () => {
-  console.log("Servidor en http://localhost:3000");
+app.use((req, res, next) => {
+  console.log(`Solicitud recibida: ${req.method} ${req.url}`);
+  next();
 });
+
 
