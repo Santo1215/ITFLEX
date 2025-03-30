@@ -2,64 +2,81 @@ const express = require("express");
 const passport = require("passport");
 const session = require("express-session");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const GitHubStrategy = require("passport-github2").Strategy;
+require("dotenv").config();
 const path = require("path");
+
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(express.static(path.join(__dirname, "public"))); // Sirve archivos estáticos desde "public"
-app.use(express.static('public'));
+// Middleware para servir archivos estáticos
+app.use(express.static(path.join(__dirname, "public")));
 
-const PORT = process.env.PORT || 3000; // Render asigna un puerto automáticamente
-
-
-// Ruta para servir el HTML principal
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "presentacion.html"));
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor en http://localhost:${PORT}`);
-});
-
-// Configurar la sesión
+// Middleware de sesión (debe ir antes de passport)
 app.use(session({ secret: "claveSecreta", resave: false, saveUninitialized: true }));
 
 // Inicializar Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configurar estrategia de Google OAuth
+// Estrategia de Google
 passport.use(new GoogleStrategy({
-    clientID: "89911314827-edb0bngc1tcej98tjbl2qdrusfb8778a.apps.googleusercontent.com",
-    clientSecret: "TUGOCSPX-nGOik_9RGtTMUouZgVZB1AcxVjwj",
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/callback"
-  },
-  (accessToken, refreshToken, profile, done) => {
+}, (accessToken, refreshToken, profile, done) => {
     return done(null, profile);
-  }
-));
+}));
 
-passport.serializeUser((user, done) => {
-    done(null, user);
+// Estrategia de GitHub
+passport.use(new GitHubStrategy({
+    clientID: process.env.GITHUB_CLIENT_ID,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/auth/github/callback"
+}, (accessToken, refreshToken, profile, done) => {
+    return done(null, profile);
+}));
+
+// Serialización y deserialización de usuario
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+// Ruta principal
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "presentacion.html"));
 });
 
-passport.deserializeUser((obj, done) => {
-    done(null, obj);
+// Ruta protegida (requiere autenticación)
+app.get("/dashboard", (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.redirect("/");
+    }
+    res.send(`<h1>Bienvenido, ${req.user.displayName}</h1> <a href="/logout">Cerrar sesión</a>`);
 });
 
-// Ruta para iniciar autenticación con Google
+// Ruta para cerrar sesión
+app.get("/logout", (req, res) => {
+    req.logout(() => {
+        res.redirect("/");
+    });
+});
+
+// Autenticación con Google
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-
-// Ruta de callback después de la autenticación
-app.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    res.redirect("/dashboard"); // Redirige a la página deseada después de login
-  }
+app.get("/auth/google/callback", 
+    passport.authenticate("google", { failureRedirect: "/" }), 
+    (req, res) => res.redirect("/dashboard")
 );
 
-app.use((req, res, next) => {
-  console.log(`Solicitud recibida: ${req.method} ${req.url}`);
-  next();
-});
+// Autenticación con GitHub
+app.get("/auth/github", passport.authenticate("github", { scope: ["user:email"] }));
+app.get("/auth/github/callback", 
+    passport.authenticate("github", { failureRedirect: "/" }), 
+    (req, res) => res.redirect("/dashboard")
+);
 
+// Servidor escuchando
+app.listen(PORT, () => {
+    console.log(`Servidor en http://localhost:${PORT}`);
+});
 

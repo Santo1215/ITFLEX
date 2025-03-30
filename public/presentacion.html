@@ -24,9 +24,17 @@
             <div class="modal-contenido">
                 <span class="cerrar" onclick="cerrarModal('modal-login')">&times;</span>
                 <h2 style="text-align: center;">Iniciar Sesión</h2>
-                <a href="http://localhost:3000/auth/google">
-                    <img src="https://www.loginradius.com/blog/static/a9dad0fc4bf1af95243aa5e2d017bc22/a8669/google_cover.jpg" alt="Iniciar sesión con Google" style="height:50px ;">
-                </a>
+                <div class="btn-container">
+                    <a href="/auth/google" class="btn-auth btn-google">
+                        <img src="https://pipedream.com/s.v0/app_m02hPO/logo/orig" alt="Google">
+                        
+                    </a>
+                    <a href="/auth/github" class="btn-auth btn-github">
+                        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
+                        
+                    </a>
+                </div>
+                
                 
                 
                 <label for="Email">Email</label>
