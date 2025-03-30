@@ -12,7 +12,7 @@ app.listen(PORT, () => {
 
 // Ruta para servir el HTML principal
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'presentacion.html'));
 });
 
 // Configurar la sesión
