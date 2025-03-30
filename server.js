@@ -46,12 +46,20 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "presentacion.html"));
 });
 
-// Ruta protegida (requiere autenticación)
+// Ruta protegida para servir index.html
 app.get("/dashboard", (req, res) => {
     if (!req.isAuthenticated()) {
         return res.redirect("/");
     }
-    res.send(`<h1>Bienvenido, ${req.user.displayName}</h1> <a href="/logout">Cerrar sesión</a>`);
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Ruta para obtener los datos del usuario autenticado
+app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.json({ error: "No autenticado" });
+    }
+    res.json({ name: req.user.displayName });
 });
 
 // Ruta para cerrar sesión
