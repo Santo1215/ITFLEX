@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    fetch("/api/user")
+    fetch("https://itflex.onrender.com/api/user")
     .then(response => response.json())
     .then(data => {
         console.log(data); // Ver qué devuelve la API en la consola
