@@ -2,7 +2,7 @@ const express = require("express");
 const passport = require("passport");
 const session = require("express-session");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-
+const path = require("path");
 const app = express();
 
 const PORT = process.env.PORT || 3000; // Render asigna un puerto automáticamente
