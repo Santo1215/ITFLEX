@@ -51,7 +51,7 @@ app.get("/dashboard", (req, res) => {
     if (!req.isAuthenticated()) {
         return res.redirect("/");
     }
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.sendFile(path.join(__dirname, "public", "Pagina/index.html"));
 });
 
 // Ruta para obtener los datos del usuario autenticado
