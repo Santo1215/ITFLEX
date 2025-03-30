@@ -5,6 +5,16 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const app = express();
 
+const PORT = process.env.PORT || 3000; // Render asigna un puerto automáticamente
+app.listen(PORT, () => {
+  console.log(`Servidor en http://localhost:${PORT}`);
+});
+
+// Ruta para servir el HTML principal
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Configurar la sesión
 app.use(session({ secret: "claveSecreta", resave: false, saveUninitialized: true }));
 
