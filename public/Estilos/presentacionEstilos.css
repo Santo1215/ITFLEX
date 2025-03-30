@@ -170,8 +170,9 @@ nav a:hover{
 
 /* Estilos para los inputs */
 .modal-contenido input {
-    width: 100%;
-    padding: 8px;
+    width: 95%; /* Ajusta el ancho para que no ocupe todo el modal */
+    max-width: 450px; /* Máximo ancho */
+    padding: 10px;
     margin: 10px 0;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -207,7 +208,7 @@ nav a:hover{
     background: white;
     color: black;
     border: 1px solid #ccc;
-    padding: 10px 15px;
+    padding: 5px 10px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: bold;

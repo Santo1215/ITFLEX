@@ -24,6 +24,7 @@
             <div class="modal-contenido">
                 <span class="cerrar" onclick="cerrarModal('modal-login')">&times;</span>
                 <h2 style="text-align: center;">Iniciar Sesión</h2>
+                <!-- INGRESO POR OAuth-->
                 <div class="btn-container">
                     <a href="/auth/google" class="btn-auth btn-google">
                         <img src="https://pipedream.com/s.v0/app_m02hPO/logo/orig" alt="Google">
@@ -34,9 +35,8 @@
                         
                     </a>
                 </div>
-                
-                
-                
+                <br>        
+               
                 <label for="Email">Email</label>
                 <input type="email" placeholder="Ingrese su email" id="Email">
                 <label for="Contraseña">Contraseña</label>
@@ -50,8 +50,21 @@
             <div class="modal-contenido">
                 <span class="cerrar" onclick="cerrarModal('modal-registro')">&times;</span>
                 <h2 style="text-align: center;">Registrarse</h2>
+                <!-- INGRESO POR OAuth-->
+                <div class="btn-container">
+                    <a href="/auth/google" class="btn-auth btn-google">
+                        <img src="https://pipedream.com/s.v0/app_m02hPO/logo/orig" alt="Google">
+                        
+                    </a>
+                    <a href="/auth/github" class="btn-auth btn-github">
+                        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
+                        
+                    </a>
+                </div>
+                <br>
+
                 <label for="Nombres">Nombres</label>
-                <input type="text" placeholder="Ingrese sus nombrea" id="Nombres">
+                <input type="text" placeholder="Ingrese sus nombres" id="Nombres">
                 <label for="Apellidos">Apellidos</label>
                 <input type="text" placeholder="Ingrese sus apellidos" id="Apellidos">
                 <label for="Email">Email</label>
