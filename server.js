@@ -5,14 +5,16 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const path = require("path");
 const app = express();
 
+app.use(express.static(path.join(__dirname, "public"))); // Sirve archivos estáticos desde "public"
+  
 const PORT = process.env.PORT || 3000; // Render asigna un puerto automáticamente
 app.listen(PORT, () => {
   console.log(`Servidor en http://localhost:${PORT}`);
 });
 
 // Ruta para servir el HTML principal
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'presentacion.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "presentacion.html"));
 });
 
 // Configurar la sesión
