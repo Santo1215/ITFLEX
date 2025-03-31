@@ -48,7 +48,7 @@ $(document).ready(function () {
         let nuevoPost = `
             <div class="project-card">
                 <a href="#" class="btn-ocultar">
-                    <img src="/media/x-cerrar.png" alt="editar" class="icono">
+                    <a href="#" class="btn-ocultar"><img src="/media/x-cerrar.png" alt="editar" class="icono"></a>
                 </a>
                 <h3>Nuevo Proyecto</h3>
                 <p>Usuario Anónimo ⭐5.0</p>
