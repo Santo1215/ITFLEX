@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware para servir archivos estáticos
 app.use(express.static(path.join(__dirname, "public")));
 
-// Middleware de sesión (debe ir antes de passport)
+// Middleware de sesión
 app.use(session({ secret: "claveSecreta", resave: false, saveUninitialized: true }));
 
 // Inicializar Passport
@@ -41,17 +41,29 @@ passport.use(new GitHubStrategy({
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Ruta principal
+// Middleware para proteger rutas
+function ensureAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect("/");
+}
+
+// Ruta principal (Página de presentación)
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "presentacion.html"));
 });
 
-// Ruta protegida para servir index.html
-app.get("/dashboard", (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.redirect("/");
-    }
-    res.sendFile(path.join(__dirname, "public", "Pagina/index.html"));
+// Ruta dinámica para todas las páginas
+app.get("/:page", (req, res) => {
+    const page = req.params.page;
+    const filePath = path.join(__dirname, "public", "Pagina", `${page}.html`);
+    
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            res.status(404).send("Página no encontrada");
+        }
+    });
 });
 
 // Ruta para obtener los datos del usuario autenticado
@@ -87,4 +99,3 @@ app.get("/auth/github/callback",
 app.listen(PORT, () => {
     console.log(`Servidor en http://localhost:${PORT}`);
 });
-
