@@ -38,12 +38,17 @@ $(document).ready(function () {
         });
     });
 
+    $(document).on("click", ".project-card", function () {
+        $(".project-card").removeClass("selected"); // Quita la selección de los demás
+        $(this).addClass("selected"); // Agrega la selección solo a este
+    });
+
     // Función para agregar un nuevo post
     function agregarTrabajo() {
         let nuevoPost = `
             <div class="project-card">
                 <a href="#" class="btn-ocultar">
-                    <img src="https://www.flaticon.es/svg/vstatic/svg/3917/3917188.svg?token=exp=1743383238~hmac=48c6403dfaa62f566eafc73341078089" alt="eliminar" class="icono">
+                    <img src="https://www.flaticon.es/svg/vstatic/svg/3917/3917195.svg?token=exp=1743384464~hmac=6e942c2f26057d8f1cce90e0d7a9d824" alt="editar" class="icono">
                 </a>
                 <h3>Nuevo Proyecto</h3>
                 <p>Usuario Anónimo ⭐5.0</p>
@@ -62,6 +67,7 @@ $(document).ready(function () {
     });
 
     actualizarCantidadProyectos(); // Inicializa el contador
+
 });
 
 

@@ -246,3 +246,7 @@ footer nav a {
     cursor: pointer;
     font-weight: bold;
 }
+
+.project-card.selected {
+    border: 3px solid #66C7F4;
+}
