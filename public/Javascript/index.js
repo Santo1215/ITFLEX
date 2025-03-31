@@ -43,8 +43,7 @@ $(document).ready(function () {
         let nuevoPost = `
             <div class="project-card">
                 <a href="#" class="btn-ocultar">
-                    <img src="https://www.flaticon.es/svg/vstatic/svg/3917/3917189.svg?token=exp=1743382763~hmac=b4a63d889716a06c279d2a20776abe20" 
-                    alt="eliminar" class="icono">
+                    <img src="https://www.flaticon.es/svg/vstatic/svg/3917/3917188.svg?token=exp=1743383238~hmac=48c6403dfaa62f566eafc73341078089" alt="eliminar" class="icono">
                 </a>
                 <h3>Nuevo Proyecto</h3>
                 <p>Usuario Anónimo ⭐5.0</p>
