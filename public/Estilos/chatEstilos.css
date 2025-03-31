@@ -1,0 +1,145 @@
+/*Estilos referentes a la cabecera de la pagina*/
+header{  
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 40px;
+    background-color: white;
+}
+
+.logo img{
+    height: 25%;
+    width: 25%;
+}
+
+nav{
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+nav a{
+    text-decoration: none;
+    color: black;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+nav a:hover{
+    color: #0056b3;
+}
+
+/*Estilos referentes al cuerpo de la pagina*/
+html, body{
+    font-family: Arial, sans-serif;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/*Estilos referentes a pie de pagina*/
+footer{
+    background-color: #01162a;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+footer nav{
+    display: flex;
+    gap: 15px;
+}
+
+footer nav a{
+    color: white;
+    text-decoration: none;
+}
+
+/*Estilos referentes a la caja de texto*/
+.chat-container {
+    width: 60%;
+    margin: 20px auto;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden; /* Cambiado de overflow-x a overflow */
+    display: flex;
+    flex-direction: column;
+    height: 60%; /* Altura fija para todo el contenedor */
+}
+.chat-box {
+    flex: 1;    
+    height: 300px; /* Altura fija */
+    max-height: 90%; /* Altura máxima */
+    overflow-y: auto;
+    padding: 10px;
+    background: #f9f9f9;
+}
+.message {
+    background: lightblue;
+    padding: 8px;
+    border-radius: 5px;
+    margin: 5px 0;
+    max-width: 80%;
+}
+.input-box {    
+    display: flex;
+    padding: 10px;
+    background: white;
+    border-top: 1px solid #ccc;
+}
+.input-box input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.input-box button {
+    margin-left: 10px;
+    background: #001F3F;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/*Estilos referentes a la seccion de lista de chats*/
+.container {
+    display: flex;
+    flex: 1;
+}
+.chat-list {
+    width: 25%;
+    background: #f0f0f0;
+    padding: 25px;
+    overflow-y: auto;
+    position: relative;
+    border-radius: 10px;
+    margin-left: 20px;
+}
+.chat-list h3 {
+    margin-bottom: 10px;
+}
+.chat-list ul {
+    list-style: none;
+    padding: 0;
+}
+.chat-list li {
+    padding: 10px;
+    background: white;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+}
