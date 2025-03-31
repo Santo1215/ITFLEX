@@ -5,10 +5,95 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Home</title>
         <link rel="icon" href="media/logoR.png" type="icon">
+        <script src="/Javascript/jquery-3.7.1.min.js"></script>
         <script src="/Javascript/index.js"></script>
+        <link rel="stylesheet" href="/Estilos/IndexEstilos.css">
     </head>
-    <body>
-        <h1>Bienvenido, <span id="nombre-usuario">Cargando...</span></h1>
-        <a href="/logout">Cerrar sesión</a>    
-    </body>
+        
+<body class="bg-gray-100">
+           
+        <nav class="navbar">
+            <div class="logo"><img src="media/logo.png" alt="ITFLEX"></div>
+            <div class="search-bar">
+                <input type="text" placeholder="Buscar proyectos, freelancers ...">
+                <button><img src="https://cdn-icons-png.flaticon.com/512/622/622669.png" alt="buscar" class="icono"></button>
+            </div>
+            <div class="menu-usuario">
+                <span><img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="perfil" class="icono"> Hola,  <span id="nombre-usuario">Cargando...</span></span>
+                <div class="menu">
+                    <div class="menu-item">Ver perfil</div>
+                    <div class="menu-item">Ver propuestas</div>
+                    <div class="menu-item">Mis proyectos</div>
+                </div>
+            </div>
+            <button class="post-project" onclick="agregarTrabajo()">Publicar un proyecto</button>
+            <a href="/logout"><button class="Btn-cerrarsesion">
+  
+                <div class="sign"><svg viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg></div>
+                
+                <div class="text">Logout</div>
+              </button></a> 
+        </nav>
+        <br>
+    <!-- Cantidad de proyectos -->
+    <p id="cantidad-proyectos" class="total-proyectos">Total de proyectos: 3</p>
+        <!-- Contenedor principal -->
+        <div class="container">
+            
+
+            <!-- Lista de proyectos -->
+            <div class="project-list">
+                <div class="project-card">
+                    <a href="#" class="btn-ocultar"><img src="https://www.flaticon.es/svg/vstatic/svg/3917/3917189.svg?token=exp=1743382763~hmac=b4a63d889716a06c279d2a20776abe20" alt="editar" class="icono"></a>                    <h3>Creación de página web</h3>
+                    <p>Duván Yahir Sanabria Echeverry ⭐4.2</p>
+                    <p>Bucaramanga, Santander</p>
+                    <p>$1'500.000</p>
+                    <p>(Hace 1 min)</p>
+                </div>
+    
+                <div class="project-card">
+                    <a href="#" class="btn-ocultar"><img src="https://www.flaticon.es/svg/vstatic/svg/3917/3917189.svg?token=exp=1743382763~hmac=b4a63d889716a06c279d2a20776abe20" alt="editar" class="icono"></a>                    <h3>Mantenimiento a un servidor DNS</h3>
+                    <p>Jorge Leonardo Vargas Mayorga ⭐3.5</p>
+                    <p>Bucaramanga, Santander</p>
+                    <p>$850.000</p>
+                    <p>(Hace 2 h)</p>
+                </div>
+    
+                <div class="project-card">
+                    <a href="#" class="btn-ocultar"><img src="https://www.flaticon.es/svg/vstatic/svg/3917/3917189.svg?token=exp=1743382763~hmac=b4a63d889716a06c279d2a20776abe20" alt="editar" class="icono"></a>                    <h3>Gestión de una base de datos</h3>
+                    <p>Eliana Martha Bonalde Marcano ⭐4.5</p>
+                    <p>Bucaramanga, Santander</p>
+                    <p>$1'000.000</p>
+                    <p>(Hace 3 sem)</p>
+                </div>
+            </div>
+    
+            <!-- Detalles del proyecto seleccionado -->
+            <div class="project-details">
+                <h2>Creación de página web</h2>
+                <p>Duván Yahir Sanabria Echeverry ⭐4.2</p>
+                <p>Bucaramanga, Santander</p>
+                <p>$1'500.000</p>
+                <button class="apply-btn">Postularme</button>
+                <p>
+                    Realizar un segundo entregable (1B Parte 2) con el listado de funcionalidades esperadas del producto software...
+                </p>
+    
+                <h3>Comentarios</h3>
+                <p>✔ Thomás Alejandro Peréz Rojas - Calificó con ⭐4.4</p>
+                <p>✔ Esteban Alberto Suárez Díaz - Calificó con ⭐4.0</p>
+            </div>
+    
+        </div>
+    
+        <!-- Pie de página -->
+        <footer>
+            <nav>
+                <a href="#">Freelancers</a>
+                <a href="#">Información</a>
+                <a href="#">Soporte</a>
+            </nav>
+        </footer>
+    
+</body>
 </html>
