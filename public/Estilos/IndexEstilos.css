@@ -64,6 +64,11 @@ body {
     position: absolute;
 }
 
+.menu a{
+   text-decoration: none;
+   color: black;
+}
+
 .menu-item{
     padding:5px;
     cursor: pointer;
