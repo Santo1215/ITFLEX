@@ -46,23 +46,22 @@ html, body{
 }
 
 /*Estilos referentes a pie de pagina*/
-footer{
+footer {
     background-color: #01162a;
     color: white;
     padding: 20px;
     text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     width: 100%;
+    margin-top: auto; /* Empuja el footer hacia abajo cuando hay poco contenido */
 }
 
-footer nav{
+footer nav {
     display: flex;
+    justify-content: center;
     gap: 15px;
 }
 
-footer nav a{
+footer nav a {
     color: white;
     text-decoration: none;
 }
