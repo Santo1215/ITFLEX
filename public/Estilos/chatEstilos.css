@@ -78,6 +78,18 @@ footer nav a{
     flex-direction: column;
     height: 60%; /* Altura fija para todo el contenedor */
 }
+
+.input-box textarea { /* Cambiado de input a textarea */
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: none; /* Evita que el usuario pueda redimensionar manualmente */
+    min-height: 40px; /* Altura mínima */
+    max-height: 120px; /* Altura máxima */
+    overflow-y: auto; /* Permite desplazarse cuando hay demasiado texto */
+}
+
 .chat-box {
     flex: 1;    
     height: 300px; /* Altura fija */
@@ -92,6 +104,14 @@ footer nav a{
     border-radius: 5px;
     margin: 5px 0;
     max-width: 80%;
+    white-space: pre-wrap; /* Preserva espacios en blanco y saltos de línea */
+    word-wrap: break-word; /* Permite que las palabras largas se rompan */
+    line-height: 1.4; /* Mejora el espaciado entre líneas */
+}
+.message br {
+    display: block;
+    content: "";
+    margin-top: 5px; /* Espacio entre párrafos */
 }
 .input-box {    
     display: flex;
