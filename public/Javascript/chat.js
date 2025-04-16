@@ -5,7 +5,11 @@ function sendMessage() {
         let chatBox = document.getElementById('chat-box');
         let msgElement = document.createElement('div');
         msgElement.classList.add('message');
-        msgElement.textContent = message;
+
+        // Reemplazar los saltos de línea con etiquetas <br>
+        message = message.replace(/\n/g, '<br>');
+
+        msgElement.innerHTML = message;
         chatBox.appendChild(msgElement);
         chatBox.scrollTop = chatBox.scrollHeight;
         input.value = "";
@@ -23,9 +27,11 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Evento para la tecla Enter
     inputField.addEventListener("keypress", function(event) {
-        if (event.key === "Enter") {
-            event.preventDefault(); // Evita el salto de línea en el input
-            sendMessage();
+        if (event.key === "Enter" && event.shiftKey) {
+            // Si se presiona Shift + Enter, se añade una nueva línea 
+        } else if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();// Si presiona enter se envia el mensaje
         }
     });
 });
