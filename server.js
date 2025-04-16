@@ -15,7 +15,12 @@ const BASE_URL = process.env.NODE_ENV === "production" ? "https://itflex.onrende
 app.use(express.static(path.join(__dirname, "public")));
 
 // Middleware de sesión
-app.use(session({ secret: "claveSecreta", resave: false, saveUninitialized: true }));
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // usa 'true' si estás en HTTPS
+  }));
 
 // Inicializar Passport
 app.use(passport.initialize());
@@ -57,9 +62,32 @@ app.get("/", (req, res) => {
 });
 
 // Ruta protegida para index
-app.get("/index", ensureAuthenticated, (req, res) => {
+app.get("/Index", ensureAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, "public", "Pagina", "index.html"));
 });
+
+app.get("/Perfil", ensureAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "Pagina", "perfil.html"));
+});
+
+app.get("/Proyectos", ensureAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "Pagina", "proyectos.html"));
+});
+
+app.get("/Chats", ensureAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "Pagina", "chat.html"));
+});
+
+app.get("/SobreNosotros", ensureAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "Pagina", "sobre-nosotros.html"));
+});
+
+// Ruta para cerrar sesión
+app.get('/logout', (req, res) => {
+    req.session.destroy(() => {
+      res.redirect('/');
+    });
+  });
 
 // Ruta dinámica para todas las páginas
 app.get("/:page", (req, res) => {
@@ -79,24 +107,15 @@ app.get("/:page", (req, res) => {
 });
 
 // Ruta para obtener los datos del usuario autenticado
-app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.json({ error: "No autenticado" });
-    }
-    res.json({ name: req.user.displayName });
-});
-
-// Ruta para cerrar sesión
-app.get("/logout", (req, res, next) => {
-    req.logout(function (err) {
-        if (err) {
-            return next(err);
-        }
-        req.session.destroy(() => {
-            res.redirect("/");
-        });
+app.get("/api/user", ensureAuthenticated, (req, res) => {
+    res.json({
+        name: req.user.displayName,
+        email: req.user.emails ? req.user.emails[0].value : 'No disponible',
+        photo: req.user.photos ? req.user.photos[0].value : null // Foto de perfil si existe
     });
 });
+
+
 
 
 // Autenticación con Google

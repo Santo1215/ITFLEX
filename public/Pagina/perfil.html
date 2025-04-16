@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Perfil</title>
+        <link rel="icon" href="/media/logoR.png" type="icon">
+        <script src="https://apis.google.com/js/api:client.js"></script>
+        <script src="/Javascript/jquery-3.7.1.min.js"></script>
+        <script src="/Javascript/perfil.js"></script>
+        <link rel="stylesheet" href="/Estilos/perfil.css">
+    </head>
+        
+<body>
+        <!--Barra de navegación-->  
+        <nav class="navbar">
+            <a href="/Index"><div class="logo"><img src="media/logo.png" alt="ITFLEX"></div></a>
+            <div class="search-bar">
+                <input type="text" placeholder="Buscar proyectos, freelancers ...">
+                <button><img src="https://cdn-icons-png.flaticon.com/512/622/622669.png" alt="buscar" class="icono"></button>
+            </div>
+            <div class="menu-usuario">
+                <span><img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="perfil" class="icono"> Hola,  <span id="nombre-usuario">Cargando...</span></span>
+                <div class="menu">
+                    <a href="/Perfil"><div class="menu-item">Ver perfil</div></a>
+                    <a href="#"><div class="menu-item">Ver propuestas</div></a>
+                    <a href="/Proyectos"><div class="menu-item">Mis proyectos</div></a>
+                    <a href="/Chats"><div class="menu-item">Chats</div></a>
+                </div>
+            </div>
+            <button class="btn-publicar" onclick="agregarTrabajo()">Publicar un proyecto</button>
+            <a href="/logout"><button id class="Btn-cerrarsesion">
+  
+                <div class="sign"><svg viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg></div>
+                
+                <div class="text">Salir</div>
+              </button></a> 
+        </nav>
+        <br>
+        <!-- Contenido de la pagina -->
+        <div class="container">
+            <!-- Encabezado -->
+            <div class="header">
+              <div class="profile-pic" style="background-image: url('https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'); background-size: cover; background-position: center;"></div>
+              <h2>Datos Personales</h2>
+            </div>
+        
+            <!-- Campos de datos -->
+            <div class="fields">
+              <div class="field">
+                <label class="labels">Nombre</label>
+                <input type="text" id="nombre-usuario-perfil"  readonly />
+              </div>
+              <div class="field">
+                <label class="labels">Apellidos</label>
+                <input type="text" id="apellidos-usuario" readonly />
+              </div>
+              <div class="field">
+                <label class="labels">Fecha de nacimiento</label>
+                <input type="text" id="fecha-usuario" readonly />
+              </div>
+              <div class="field">
+                <label class="labels">Ciudad</label>
+                <input type="text" id="ciudad-usuario" readonly />
+              </div>
+              <div class="field">
+                <label class="labels">País</label>
+                <input type="text" id="pais-usuario" readonly />
+              </div>
+            </div>
+            <div class="role">&#128276; Notificaciones</div>
+            <!-- Roles -->
+            <h3>Especialidades</h3>
+            <div class="roles">
+              <div class="role">Product Owner</div>
+              <div class="role">Especialista en IA</div>
+              <div class="role">Especialista en Computer Vision</div>
+            </div>
+        
+            <!-- Descripción -->
+            <div class="description">
+              <p>
+                Ingeniero especializado en inteligencia artificial y visión por computador, con experiencia en el desarrollo de modelos de aprendizaje automático y deep learning para el procesamiento y análisis de imágenes y videos.
+              </p>
+              <p>
+                Experto en soluciones como reconocimiento facial, detección de objetos, análisis de imágenes médicas, y despliegue en plataformas como Google Cloud Vision y AWS Rekognition.
+              </p>
+            </div>
+        
+            <!-- Contacto -->
+            <div class="contact">
+              <h3>Información de contacto</h3>
+              <div class="contact-info">
+                <div id="correo-usuario">nikoriveraleon@gmail.com</div>
+                <div>nicolas2221918@correo.uis.edu.co</div>
+                <div>301 4110195</div>
+                <a href="https://github.com/nicolas-ai" target="_blank">github.com/nicolas-ai</a>
+                <a href="https://linkedin.com/in/nicolas-ai" target="_blank">linkedin.com/in/nicolas-ai</a>
+              </div>
+            </div>
+          </div>
+    
+        <!-- Pie de página -->
+        <footer>
+            <nav>
+                <a href="#">Freelancers</a>
+                <a href="/SobreNosotros">Sobre Nosotros</a>
+                <a href="#">Soporte</a>
+            </nav>
+        </footer>
+    
+</body>
+</html>

@@ -1,13 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
-    fetch("https://itflex.onrender.com/api/user")
+    fetch("/api/user")
     .then(response => response.json())
     .then(data => {
-        console.log(data); // Ver qué devuelve la API en la consola
-        const nombreUsuario = document.getElementById("nombre-usuario");
+        const campoNombre = document.getElementById("nombre-usuario");
+
         if (data.name) {
-            nombreUsuario.textContent = data.name;
+            const primerNombre = data.name.split(" ")[0];
+
+            const nombreFormateado = primerNombre.charAt(0).toUpperCase() + primerNombre.slice(1).toLowerCase();
+
+            campoNombre.textContent = nombreFormateado;
         } else {
-            nombreUsuario.textContent = "Invitado";
+            campoNombre.textContent = "Invitado";
         }
     })
     .catch(error => console.error("Error al obtener usuario:", error));
