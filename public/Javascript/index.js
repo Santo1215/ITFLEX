@@ -66,7 +66,7 @@ $(document).ready(function () {
     }
 
     // Evento para publicar un proyecto
-    $(".post-project").click(function () {
+    $(".btn-publicar").click(function () {
         agregarTrabajo();
     });
 
