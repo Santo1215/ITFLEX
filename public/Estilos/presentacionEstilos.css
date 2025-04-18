@@ -100,7 +100,9 @@ nav a:hover {
 }
 
 /* Botones */
-.btn-publicar {
+
+/* Botón de publicación con cambio en el nombre porque en el css de proyectosEstilos tambien se llamaba btn-publicar */
+.btn-publica {
     padding: 10px 15px;
     cursor: pointer;
     font-size: 16px;
@@ -110,7 +112,7 @@ nav a:hover {
     transition: background-color 0.3s;
 }
 
-.btn-publicar:hover {
+.btn-publica:hover {
     background-color: #001F3F;
     color: white;
 }
