@@ -48,18 +48,21 @@ $(document).ready(function () {
     });
 
     // Función para agregar un nuevo post
+    let contadorProyectos = $(".project-card").length;
     function agregarTrabajo() {
+        contadorProyectos++;
+    
         let nuevoPost = `
-            <div class="project-card" data-titulo="Nuevo Proyecto" data-ubicacion="Bucaramanga, Santander" data-precio="$500.000" data-descripcion="Descripción del proyecto" data-comentarios='✔ Usuario - Calificó con ⭐0.0'>
-                <a href="#" class="btn-ocultar">
-                    <a href="#" class="btn-ocultar"><img src="/media/x-cerrar.png" alt="editar" class="icono"></a>
-                </a>
-                <h3>Nuevo Proyecto</h3>
+            <div class="project-card" data-titulo="Proyecto ${contadorProyectos}" data-usuario="Usuario Anónimo ⭐5.0" data-ubicacion="Bucaramanga, Santander" data-precio="$500.000" data-descripcion="Descripción del proyecto" data-comentarios='✔ Usuario - Calificó con ⭐0.0'>
+                <a href="#" class="btn-ocultar"><img src="/media/x-cerrar.png" alt="cerrar" class="icono"></a>
+                <h3>Proyecto ${contadorProyectos}</h3>
+                <p>Usuario Anónimo ⭐5.0</p>
                 <p>Ubicación no especificada</p>
                 <p>$500.000</p>
                 <p>(Hace unos segundos)</p>
             </div>
         `;
+    
         $(".project-list").prepend(nuevoPost);
         actualizarCantidadProyectos();
     }
