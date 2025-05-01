@@ -115,9 +115,6 @@ app.get("/api/user", ensureAuthenticated, (req, res) => {
     });
 });
 
-
-
-
 // Autenticación con Google
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 app.get("/auth/google/callback", 
@@ -136,3 +133,4 @@ app.get("/auth/github/callback",
 app.listen(PORT, () => {
     console.log(`Servidor en ${BASE_URL}`);
 });
+
