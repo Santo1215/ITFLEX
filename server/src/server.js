@@ -4,7 +4,7 @@ const session = require("express-session");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const GitHubStrategy = require("passport-github2").Strategy;
 require("dotenv").config();
-const pool = require("./db");
+const pool = require("./config/db");
 
 const app = express();
 
