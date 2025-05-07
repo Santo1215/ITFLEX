@@ -4,7 +4,7 @@ const session = require("express-session");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const GitHubStrategy = require("passport-github2").Strategy;
 require("dotenv").config();
-const pool = require("./config/db");
+const pool = require("./src/config/db");
 
 const app = express();
 
@@ -60,9 +60,11 @@ passport.deserializeUser(async (id, done) => {
 
 // Rutas de autenticación
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-app.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => res.redirect('/dashboard')
+app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/' }),
+    (req, res) => {
+      res.redirect('http://localhost:3000/home'); // redirige al frontend
+    }
 );
 
 // Ruta protegida de ejemplo
@@ -71,7 +73,7 @@ app.get('/dashboard', (req, res) => {
     res.send(`Bienvenido ${req.user.name}`);
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
 
 

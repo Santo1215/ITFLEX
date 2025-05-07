@@ -29,7 +29,7 @@ function AuthModal({ isOpen, type, onClose }) {
             <h2>{type === 'login' ? 'Iniciar Sesión' : 'Registrarse'}</h2>
             
             <div className={styles.btnContainer}>
-            <a href="/auth/google" className={`${styles.btnAuth} ${styles.btnGoogle}`}>
+            <a href="http://localhost:5000/auth/google" className={`${styles.btnAuth} ${styles.btnGoogle}`}>
                 <img src="https://pipedream.com/s.v0/app_m02hPO/logo/orig" alt="Google" />
             </a>
             <a href="/auth/github" className={`${styles.btnAuth} ${styles.btnGithub}`}>

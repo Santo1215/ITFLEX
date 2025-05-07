@@ -1,36 +1,22 @@
 import { useState } from 'react';
-import Header from './components/Header';
-import HeroSection from './components/HeroSection';
-import FeaturesSection from './components/FeaturesSection';
-import Footer from './components/Footer';
-import AuthModal from './components/AuthModal';
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppRoutes from './routes/AppRoutes';
 import './assets/styles/App.css';
 
 function App() {
     const [activeModal, setActiveModal] = useState(null);
 
-    const openModal = (modalType) => {
-    setActiveModal(modalType);
-};
+    const openModal = (modalType) => setActiveModal(modalType);
+    const closeModal = () => setActiveModal(null);
 
-const closeModal = () => {
-    setActiveModal(null);
-};
-
-return (
-    <div className="app">
-        <Header onOpenModal={openModal} />
-        <main>
-            <HeroSection />
-            <FeaturesSection />
-        </main>
-        <Footer />
-        <AuthModal 
-            isOpen={activeModal !== null} 
-            type={activeModal} 
-            onClose={closeModal} 
+    return (
+        <Router>
+        <AppRoutes
+            activeModal={activeModal}
+            onOpenModal={openModal}
+            onCloseModal={closeModal}
         />
-    </div>
+        </Router>
     );
 }
 
