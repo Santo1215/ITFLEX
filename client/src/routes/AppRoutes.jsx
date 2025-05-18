@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from '../pages/LandingPage';
 import HomePage from '../pages/HomePage';
+import PublicarProyecto from '../pages/PublicarProyecto';
 import NotFound from '../pages/NotFound';
 
 function AppRoutes({ activeModal, onOpenModal, onCloseModal }) {
@@ -8,7 +9,8 @@ function AppRoutes({ activeModal, onOpenModal, onCloseModal }) {
     return (
         <Routes>
         <Route path="/" element={<LandingPage activeModal={activeModal} onOpenModal={onOpenModal} onCloseModal={onCloseModal} />} />
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/Home" element={<HomePage />} />
+        <Route path="/Publicar" element={<PublicarProyecto />} />
         <Route path="*" element={<NotFound />} />
         </Routes>
     );

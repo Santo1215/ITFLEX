@@ -1,15 +1,15 @@
 import React from 'react';
 import Navbar from '../components/navbar';
-import ProyectosListado from '../components/ProyectosListado';
-function HomePage() {
+import CrearProyecto from "../components/CrearProyecto";
+
+function PublicarProyecto() {
      return (
         <div>
             <Navbar />
-            <ProyectosListado/>
+            <CrearProyecto />
         </div>
      
         
      );
 }
-
-export default HomePage;
+export default PublicarProyecto;

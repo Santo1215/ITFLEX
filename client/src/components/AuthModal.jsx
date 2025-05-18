@@ -39,7 +39,7 @@ function AuthModal({ isOpen, type, onClose }) {
             <br />
             
             <form onSubmit={handleSubmit}>
-            {type === 'register' && (
+            {type === 'register' && (   
                 <>
                 <label>Nombres</label>
                 <input 
