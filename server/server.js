@@ -8,15 +8,27 @@ require("dotenv").config();
 const pool = require("./src/config/db");
 const path = require("path");
 
-const FRONTEND_URL = 'http://localhost:3000' || process.env.FRONTEND_URL  ;
+
 
 const googleCallbackURL = process.env.NODE_ENV === 'production'
   ? 'https://pruebasitflex.onrender.com/auth/google/callback'
   : 'http://localhost:5000/auth/google/callback';
 
-console.log('Usando FRONTEND_URL:', FRONTEND_URL);
-console.log('Usando GOOGLE_CALLBACK_URL:', googleCallbackURL);
 
+console.log('Usando GOOGLE_CALLBACK_URL:', googleCallbackURL);
+let FRONTEND_URL = '';  // define fuera para usar luego
+
+if (googleCallbackURL === "https://pruebasitflex.onrender.com/auth/google/callback") {
+  FRONTEND_URL = 'https://pruebasitflex.onrender.com';
+} else if (googleCallbackURL === "http://localhost:5000/auth/google/callback") {
+  FRONTEND_URL = 'http://localhost:3000';
+} else if (googleCallbackURL === "https://itflex.onrender.com/auth/google/callback") {
+  FRONTEND_URL = 'https://itflex.onrender.com';
+} else {
+  FRONTEND_URL = 'http://localhost:3000'; // fallback por si no coincide nada
+}
+
+console.log('Usando FRONTEND_URL:', FRONTEND_URL);
 const app = express();
 
 // Middleware
