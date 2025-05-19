@@ -9,10 +9,6 @@ const pool = require("./src/config/db");
 
 const app = express();
 
-fetch('http://localhost:5000/api/user', {
-  credentials: 'include', // para que se mande la cookie
-})
-
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
@@ -101,6 +97,15 @@ app.get('/dashboard', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+const path = require('path');
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client', 'build')));
+
+    app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
+});
+}
 app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
 
 // Ruta para crear proyectos
