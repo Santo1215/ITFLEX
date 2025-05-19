@@ -2,6 +2,7 @@ import { useState } from 'react';
 import styles from '../assets/styles/AuthModal.module.css';
 
 function AuthModal({ isOpen, type, onClose }) {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -29,7 +30,7 @@ function AuthModal({ isOpen, type, onClose }) {
             <h2>{type === 'login' ? 'Iniciar Sesión' : 'Registrarse'}</h2>
             
             <div className={styles.btnContainer}>
-            <a href="/auth/google" className={`${styles.btnAuth} ${styles.btnGoogle}`}>
+            <a href={`${backendUrl}/auth/google`} className={`${styles.btnAuth} ${styles.btnGoogle}`}>
                 <img src="https://pipedream.com/s.v0/app_m02hPO/logo/orig" alt="Google" />
             </a>
             <a href="/auth/github" className={`${styles.btnAuth} ${styles.btnGithub}`}>
