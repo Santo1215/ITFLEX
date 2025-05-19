@@ -12,7 +12,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000' || process.env.FRONTEND_PRUEBAS,
+  origin: 'https://pruebasitflex.onrender.com' || 'http://localhost:3000' || 'https://itflex.onrender.com',
   credentials: true,
 }));
 
