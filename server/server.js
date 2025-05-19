@@ -8,7 +8,7 @@ require("dotenv").config();
 const pool = require("./src/config/db");
 const path = require("path");
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = 'http://localhost:3000' || process.env.FRONTEND_URL  ;
 
 const googleCallbackURL = process.env.NODE_ENV === 'production'
   ? 'https://pruebasitflex.onrender.com/auth/google/callback'
@@ -142,6 +142,16 @@ app.get("/api/proyectos", async (req, res) => {
   } catch (error) {
     console.error("Error al obtener proyectos:", error);
     res.status(500).json({ error: "Error al obtener proyectos" });
+  }
+});
+
+app.get('/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()'); // Consulta sencilla para probar conexión
+    res.json({ success: true, time: result.rows[0].now });
+  } catch (error) {
+    console.error('Error en test-db:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
