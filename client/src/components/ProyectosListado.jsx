@@ -22,18 +22,24 @@ const ProyectosListado = () => {
   const [proyectos, setProyectos] = useState([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
 
-  useEffect(() => {
-    // Traer proyectos desde backend
-    fetch("http://localhost:5000/api/proyectos")
-      .then((res) => res.json())
-      .then((data) => {
-        setProyectos(data);
-        if (data.length > 0) setProyectoSeleccionado(data[0]);
-      })
-      .catch((error) => {
-        console.error("Error al cargar proyectos:", error);
-      });
-  }, []);
+ useEffect(() => {
+  const API_URL =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "https://pruebasitflex.onrender.com";
+
+  fetch(`${API_URL}/api/proyectos`, {
+    credentials: 'include'
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      setProyectos(data);
+      if (data.length > 0) setProyectoSeleccionado(data[0]);
+    })
+    .catch((error) => {
+      console.error("Error al cargar proyectos:", error);
+    });
+}, []);
 
   if (proyectos.length === 0) return <p>Cargando proyectos...</p>;
 
