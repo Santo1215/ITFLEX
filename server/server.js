@@ -7,13 +7,26 @@ const GitHubStrategy = require("passport-github2").Strategy;
 require("dotenv").config();
 const pool = require("./src/config/db");
 const path = require("path");
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000' || process.env.FRONTEND_PRUEBAS
+const FRONTEND_URL = process.env.FRONTEND_PRUEBAS || process.env.FRONTEND_URL || 'http://localhost:3000';
 console.log('Usando FRONTEND_URL:', FRONTEND_URL);
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  'https://pruebasitflex.onrender.com',
+  'http://localhost:3000',
+  'https://itflex.onrender.com'
+];
+
 app.use(cors({
-  origin: 'https://pruebasitflex.onrender.com' || 'http://localhost:3000' || 'https://itflex.onrender.com',
+  origin: function(origin, callback){
+    // Permitir requests sin origin (como Postman) y requests desde allowedOrigins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origen no permitido por CORS'));
+    }
+  },
   credentials: true,
 }));
 
