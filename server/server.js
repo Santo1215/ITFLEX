@@ -7,8 +7,16 @@ const GitHubStrategy = require("passport-github2").Strategy;
 require("dotenv").config();
 const pool = require("./src/config/db");
 const path = require("path");
-const FRONTEND_URL = process.env.FRONTEND_PRUEBAS || process.env.FRONTEND_URL || 'http://localhost:3000';
+
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+const googleCallbackURL = process.env.NODE_ENV === 'production'
+  ? 'https://pruebasitflex.onrender.com/auth/google/callback'
+  : 'http://localhost:5000/auth/google/callback';
+
 console.log('Usando FRONTEND_URL:', FRONTEND_URL);
+console.log('Usando GOOGLE_CALLBACK_URL:', googleCallbackURL);
+
 const app = express();
 
 // Middleware
@@ -20,7 +28,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function(origin, callback){
-    // Permitir requests sin origin (como Postman) y requests desde allowedOrigins
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -47,7 +54,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL
+  callbackURL: googleCallbackURL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     const { rows } = await pool.query(
@@ -88,6 +95,7 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
+    console.log('Redirigiendo a:', `${FRONTEND_URL}/Home`);
     res.redirect(`${FRONTEND_URL}/Home`);
   }
 );
