@@ -6,15 +6,29 @@ function Navbar() {
   const [nombreUsuario, setNombreUsuario] = useState('Cargando...');
 
   useEffect(() => {
-  fetch('http://localhost:5000/api/user', { credentials: 'include' })
-    .then(response => response.json())
+    // Usa la URL de la API según entorno
+    const API_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:5000'
+      : 'https://pruebasitflex.onrender.com';
+
+    fetch(`${API_URL}/api/user`, {
+      method: 'GET',
+      credentials: 'include',  // para enviar cookies/sesión
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Error en la respuesta del servidor');
+      return response.json();
+    })
     .then(data => {
-      console.log('Respuesta API /api/user:', data); // <--- Esto te mostrará lo que recibes
+      console.log('Respuesta API /api/user:', data);
       if (data.name) {
         const primerNombre = data.name.split(' ')[0];
-        const nombreFormateado =
-          primerNombre.charAt(0).toUpperCase() +
-          primerNombre.slice(1).toLowerCase();
+        const nombreFormateado = 
+          primerNombre.charAt(0).toUpperCase() + primerNombre.slice(1).toLowerCase();
         setNombreUsuario(nombreFormateado);
       } else {
         setNombreUsuario('Invitado');
@@ -23,8 +37,9 @@ function Navbar() {
     .catch(error => {
       console.error('Error al obtener usuario:', error);
       setNombreUsuario('Invitado');
-    });   
-}, []);
+    });
+
+  }, []);
   const [menuVisible, setMenuVisible] = useState(false);
 
   const toggleMenu = () => {
