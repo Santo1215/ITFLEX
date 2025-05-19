@@ -6,63 +6,80 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const GitHubStrategy = require("passport-github2").Strategy;
 require("dotenv").config();
 const pool = require("./src/config/db");
+const path = require("path");
 
 const app = express();
 
+// Middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
 }));
 
 app.use(express.json());
 
-// Configuración de sesión
+// Sesión
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false, httpOnly: true }
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, httpOnly: true }
 }));
 
-// Inicialización de Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Estrategia de Google
+// Estrategia Google
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
-    try {
-        const { rows } = await pool.query(
-        `INSERT INTO autenticacion.usuarios (
-            name, email, google_id, avatar_url, provider, role, last_login, password
-        ) VALUES ($1, $2, $3, $4, 'google', 'usuario', NOW(), $5)
-        ON CONFLICT (email) 
-        DO UPDATE SET 
-            google_id = EXCLUDED.google_id,
-            avatar_url = EXCLUDED.avatar_url,
-            provider = EXCLUDED.provider,
-            last_login = NOW()
-        RETURNING *`,
-        [
-            profile.displayName,
-            profile.emails[0].value,
-            profile.id,
-            profile.photos[0].value,
-            null // <- Aquí la contraseña es null porque es OAuth
-        ]
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO autenticacion.usuarios (
+        name, email, google_id, avatar_url, provider, role, last_login, password
+      ) VALUES ($1, $2, $3, $4, 'google', 'usuario', NOW(), $5)
+      ON CONFLICT (email) 
+      DO UPDATE SET 
+        google_id = EXCLUDED.google_id,
+        avatar_url = EXCLUDED.avatar_url,
+        provider = EXCLUDED.provider,
+        last_login = NOW()
+      RETURNING *`,
+      [
+        profile.displayName,
+        profile.emails[0].value,
+        profile.id,
+        profile.photos[0].value,
+        null
+      ]
     );
-        done(null, rows[0]);
-    } catch (err) {
-        done(err);
-    }
+    done(null, rows[0]);
+  } catch (err) {
+    done(err);
+  }
 }));
 
-//Autenticado
+// Serializar usuario
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+  const { rows } = await pool.query('SELECT * FROM autenticacion.usuarios WHERE id = $1', [id]);
+  done(null, rows[0]);
+});
+
+// Rutas de autenticación
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect(process.env.FRONTEND_URL + '/Home'); // redirige al frontend
+  }
+);
+
+// Rutas API
 app.get('/api/user', (req, res) => {
-  console.log('req.user:', req.user);//Esto solo sirve para mostrar en consola si el usuario esta bien autenticado  
   if (req.isAuthenticated()) {
     res.json({
       name: req.user.name,
@@ -74,45 +91,10 @@ app.get('/api/user', (req, res) => {
   }
 });
 
-// Serialización
-passport.serializeUser((user, done) => done(null, user.id));
-passport.deserializeUser(async (id, done) => {
-    const { rows } = await pool.query('SELECT * FROM autenticacion.usuarios WHERE id = $1', [id]);
-    done(null, rows[0]);
-});
-
-// Rutas de autenticación
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/' }),
-    (req, res) => {
-      res.redirect('http://localhost:3000/Home'); // redirige al frontend
-    }
-);
-
-// Ruta protegida de ejemplo
-app.get('/dashboard', (req, res) => {
-    if (!req.isAuthenticated()) return res.redirect('/login');
-    res.send(`Bienvenido ${req.user.name}`);
-});
-
-const PORT = process.env.PORT || 5000;
-const path = require('path');
-
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client', 'build')));
-
-    app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'build', 'index.jsx'));
-});
-}
-app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
-
-// Ruta para crear proyectos
 app.post("/api/proyectos", async (req, res) => {
   try {
     const { title, description, budget, deadline } = req.body;
-    const clientId = req.user?.id || 3; // O un valor por defecto para pruebas
+    const clientId = req.user?.id || 3;
 
     const result = await pool.query(
       "INSERT INTO proyectos.proyectos (client_id, title, description, budget, deadline) VALUES ($1, $2, $3, $4, $5) RETURNING *",
@@ -140,3 +122,16 @@ app.get("/api/proyectos", async (req, res) => {
     res.status(500).json({ error: "Error al obtener proyectos" });
   }
 });
+
+// Producción: servir React
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client', 'public')));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client', 'public', 'index.html'));
+  });
+}
+
+// Puerto
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
