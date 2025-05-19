@@ -74,7 +74,7 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect(process.env.FRONTEND_URL + '/Home'); // redirige al frontend
+    res.redirect('https://pruebasitflex.onrender.com' || 'http://localhost:3000' || 'https://itflex.onrender.com' + '/Home'); // redirige al frontend
   }
 );
 
