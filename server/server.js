@@ -7,7 +7,8 @@ const GitHubStrategy = require("passport-github2").Strategy;
 require("dotenv").config();
 const pool = require("./src/config/db");
 const path = require("path");
-
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000' || process.env.FRONTEND_PRUEBAS
+console.log('Usando FRONTEND_URL:', FRONTEND_URL);
 const app = express();
 
 // Middleware
@@ -74,7 +75,7 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect('https://pruebasitflex.onrender.com' || 'http://localhost:3000' || 'https://itflex.onrender.com' + '/Home'); // redirige al frontend
+    res.redirect(`${FRONTEND_URL}/Home`);
   }
 );
 
