@@ -84,7 +84,7 @@ function Navbar() {
         Hola, <span id="nombre-usuario">{nombreUsuario}</span>
         </span>
         <div className="menu">
-          <a href="/Perfil">
+          <a href="/MiPerfil">
             <div className="menu-item">Ver perfil</div>
           </a>
           <a href="#">

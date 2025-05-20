@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "../assets/styles//CrearProyecto.css";
+import BotonCancelar from "./BotonCancelar";
 
 export default function CrearProyecto({ onProyectoCreado }) {
   const [title, setTitle] = useState("");
@@ -7,6 +8,11 @@ export default function CrearProyecto({ onProyectoCreado }) {
   const [budget, setBudget] = useState("");
   const [formattedBudget, setFormattedBudget] = useState("");
   const [deadline, setDeadline] = useState("");
+ 
+  const API_URL = process.env.NODE_ENV === 'production'
+  ? 'https://pruebasitflex.onrender.com'
+  : 'http://localhost:5000';
+
 
   // Función para formatear el valor como moneda
   const formatCurrency = (value) => {
@@ -51,7 +57,7 @@ export default function CrearProyecto({ onProyectoCreado }) {
     };
 
     try {
-      const response = await fetch("http://localhost:5000/api/proyectos", {
+      const response = await fetch(`${API_URL}/api/proyectos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevoProyecto),
@@ -134,9 +140,7 @@ export default function CrearProyecto({ onProyectoCreado }) {
         </div>
 
         <div className="button-group">
-          <button type="button" className="button cancel-button">
-            Cancelar
-          </button>
+          <a style={{ textDecoration: 'none' }} href="/Home"><BotonCancelar/></a>
           <button type="submit" className="button submit-button">
             Publicar
           </button>

@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import LandingPage from '../pages/LandingPage';
 import HomePage from '../pages/HomePage';
 import PublicarProyecto from '../pages/PublicarProyecto';
+import MiPerfil from '../pages/PerfilPersonal';
 import NotFound from '../pages/NotFound';
 
 function AppRoutes({ activeModal, onOpenModal, onCloseModal }) {
@@ -11,6 +12,7 @@ function AppRoutes({ activeModal, onOpenModal, onCloseModal }) {
         <Route path="/" element={<LandingPage activeModal={activeModal} onOpenModal={onOpenModal} onCloseModal={onCloseModal} />} />
         <Route path="/Home" element={<HomePage />} />
         <Route path="/Publicar" element={<PublicarProyecto />} />
+        <Route path="/MiPerfil" element={<MiPerfil />} />
         <Route path="*" element={<NotFound />} />
         </Routes>
     );

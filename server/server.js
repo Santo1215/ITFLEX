@@ -69,27 +69,44 @@ passport.use(new GoogleStrategy({
   callbackURL: googleCallbackURL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    const { rows } = await pool.query(
-      `INSERT INTO autenticacion.usuarios (
-        name, email, google_id, avatar_url, provider, role, last_login, password
-      ) VALUES ($1, $2, $3, $4, 'google', 'usuario', NOW(), $5)
-      ON CONFLICT (email) 
-      DO UPDATE SET 
-        google_id = EXCLUDED.google_id,
-        avatar_url = EXCLUDED.avatar_url,
-        provider = EXCLUDED.provider,
-        last_login = NOW()
-      RETURNING *`,
+    // Paso 1: Insertar o actualizar usuario principal
+    const usuarioResult = await pool.query(
+      `INSERT INTO autenticacion.usuarios (name, email, google_id, avatar_url, provider, role, last_login)
+       VALUES ($1, $2, $3, $4, 'google', 'usuario', NOW())
+       ON CONFLICT (email)
+       DO UPDATE SET google_id = EXCLUDED.google_id,
+                     avatar_url = EXCLUDED.avatar_url,
+                     provider = EXCLUDED.provider,
+                     last_login = NOW()
+       RETURNING id`,
       [
         profile.displayName,
         profile.emails[0].value,
         profile.id,
-        profile.photos[0].value,
-        null
+        profile.photos[0].value
       ]
     );
-    done(null, rows[0]);
+
+    const userId = usuarioResult.rows[0].id;
+
+    // Paso 2: Insertar perfil solo si no existe para ese user_id
+    await pool.query(
+      `INSERT INTO usuarios.perfiles (user_id, bio, location, website, hourly_rate, profile_image)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [
+        userId,
+        `Hola, soy ${profile.displayName}`, // bio
+        '',                                  // location
+        '',                                  // website
+        0.00,                                // hourly_rate
+        profile.photos[0].value              // profile_image
+      ]
+    );
+
+    done(null, { id: userId }); // para serializar
   } catch (err) {
+    console.error('Error en estrategia Google:', err);
     done(err);
   }
 }));
@@ -128,7 +145,7 @@ app.get('/api/user', (req, res) => {
 app.post("/api/proyectos", async (req, res) => {
   try {
     const { title, description, budget, deadline } = req.body;
-    const clientId = req.user?.id || 3;
+    const clientId = req.user.id;
 
     const result = await pool.query(
       "INSERT INTO proyectos.proyectos (client_id, title, description, budget, deadline) VALUES ($1, $2, $3, $4, $5) RETURNING *",
@@ -164,6 +181,140 @@ app.get('/test-db', async (req, res) => {
   } catch (error) {
     console.error('Error en test-db:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Ruta para obtener el perfil del usuario autenticado
+app.get("/api/perfil", async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "No autorizado" });
+    }
+
+    const usuarioId = req.user.id;
+
+    const perfilResult = await pool.query(`
+      SELECT 
+        u.name AS nombre,
+        u.email,
+        p.bio,
+        p.location,
+        p.website,
+        p.hourly_rate,
+        p.profile_image
+      FROM usuarios.perfiles p
+      JOIN autenticacion.usuarios u ON p.user_id = u.id
+      WHERE u.id = $1
+    `, [usuarioId]);
+
+    if (perfilResult.rows.length === 0) {
+      return res.status(404).json({ error: "Perfil no encontrado" });
+    }
+    const perfil = perfilResult.rows[0];
+
+    const enlacesResult = await pool.query(`
+      SELECT platform, url 
+      FROM usuarios.enlaces_sociales
+      WHERE user_id = $1
+    `, [usuarioId]);
+    const enlaces = enlacesResult.rows;
+
+    const portafoliosResult = await pool.query(`
+      SELECT title, description, url, created_at
+      FROM usuarios.portafolios
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `, [usuarioId]);
+    const portafolios = portafoliosResult.rows;
+
+    const habilidadesResult = await pool.query(`
+      SELECT ch.id, ch.name
+      FROM usuarios.user_habilidades uh
+      JOIN compartido.habilidades ch ON uh.skill_id = ch.id
+      WHERE uh.user_id = $1
+    `, [usuarioId]);
+const habilidades = habilidadesResult.rows;
+
+    res.json({
+      perfil,
+      enlaces_sociales: enlaces,
+      portafolios,
+      habilidades,
+    });
+  } catch (error) {
+    console.error("Error al obtener perfil completo:", error);
+    res.status(500).json({ error: "Error del servidor" });
+  }
+});
+
+app.get("/api/habilidades", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT id, name FROM compartido.habilidades ORDER BY name");
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error obteniendo habilidades:", error);
+    res.status(500).json({ error: "Error obteniendo habilidades" });
+  }
+});
+
+/*Ruta para subir los cambios del perfil*/
+app.put("/api/perfil", async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "No autorizado" });
+    }
+    const userId = req.user.id;
+    const {
+  bio,
+  location,
+  website,
+  hourly_rate,
+  profile_image,
+  enlaces_sociales,
+  habilidades
+} = req.body;
+  
+    // Actualizar datos generales del perfil
+    await pool.query(`
+      INSERT INTO usuarios.perfiles (user_id, bio, location, website, hourly_rate, profile_image)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (user_id)
+      DO UPDATE SET bio = $2, location = $3, website = $4, hourly_rate = $5, profile_image = $6
+    `, [userId, bio, location, website, hourly_rate, profile_image]);
+
+    // Insertar habilidades sin duplicar
+    if (Array.isArray(habilidades)) {
+      for (const skillId of habilidades) {
+        await pool.query(`
+          INSERT INTO usuarios.user_habilidades (user_id, skill_id)
+          SELECT $1, $2
+          WHERE NOT EXISTS (
+            SELECT 1 FROM usuarios.user_habilidades
+            WHERE user_id = $1 AND skill_id = $2
+          )
+        `, [userId, skillId]);
+      }
+    }
+
+    // Insertar nuevos enlaces sociales sin borrar anteriores
+    if (Array.isArray(enlaces_sociales)) {
+      for (const enlace of enlaces_sociales) {
+        await pool.query(`
+          INSERT INTO usuarios.enlaces_sociales (user_id, platform, url)
+          SELECT $1, $2, $3
+          WHERE NOT EXISTS (
+            SELECT 1 FROM usuarios.enlaces_sociales
+            WHERE user_id = $1 AND platform = $4 AND url = $5
+          )
+        `, [userId, enlace.platform, enlace.url, enlace.platform, enlace.url]);
+      }
+    }
+
+    res.json({ message: "Perfil actualizado correctamente" });
+
+  } catch (error) {
+    console.error("Error actualizando perfil:", error);
+    res.status(500).json({ error: "Error actualizando perfil" });
   }
 });
 
