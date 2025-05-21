@@ -87,7 +87,7 @@ function Navbar() {
           <a href="/MiPerfil">
             <div className="menu-item">Ver perfil</div>
           </a>
-          <a href="#">
+          <a href="/VerPropuestas">
             <div className="menu-item">Ver propuestas</div>
           </a>
           <a href="/MisProyectos">
@@ -104,7 +104,7 @@ function Navbar() {
       </button></a>
       
 
-      <a href="/logout">
+      <a href="/">
         <button className="Btn-cerrarsesion">
           <div className="sign">
             <svg viewBox="0 0 512 512">

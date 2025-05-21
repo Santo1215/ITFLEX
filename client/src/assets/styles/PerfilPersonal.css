@@ -125,3 +125,16 @@
   align-items: center;
   justify-content: flex-start; 
 }
+
+.select-btn-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.select-btn-wrapper select {
+  padding: 1em 0.5em;
+  font-size: 1rem;
+  cursor: pointer;
+}

@@ -354,6 +354,186 @@ app.put("/api/perfil", async (req, res) => {
   }
 });
 
+// Ruta para obtener perfiles de otros usuarios
+app.get("/api/perfil/:id", async (req, res) => {
+  const usuarioId = req.params.id;
+
+  try {
+    const perfilResult = await pool.query(`
+      SELECT 
+        u.name AS nombre,
+        u.email,
+        p.bio,
+        p.location,
+        p.website,
+        p.hourly_rate,
+        p.profile_image
+      FROM usuarios.perfiles p
+      JOIN autenticacion.usuarios u ON p.user_id = u.id
+      WHERE u.id = $1
+    `, [usuarioId]);
+
+    if (perfilResult.rows.length === 0) {
+      return res.status(404).json({ error: "Perfil no encontrado" });
+    }
+
+    const perfil = perfilResult.rows[0];
+
+    const enlacesResult = await pool.query(`
+      SELECT platform, url 
+      FROM usuarios.enlaces_sociales
+      WHERE user_id = $1
+    `, [usuarioId]);
+
+    const portafoliosResult = await pool.query(`
+      SELECT title, description, url, created_at
+      FROM usuarios.portafolios
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `, [usuarioId]);
+
+    const habilidadesResult = await pool.query(`
+      SELECT ch.id, ch.name
+      FROM usuarios.user_habilidades uh
+      JOIN compartido.habilidades ch ON uh.skill_id = ch.id
+      WHERE uh.user_id = $1
+    `, [usuarioId]);
+
+    res.json({
+      perfil,
+      enlaces_sociales: enlacesResult.rows,
+      portafolios: portafoliosResult.rows,
+      habilidades: habilidadesResult.rows,
+    });
+  } catch (error) {
+    console.error("Error al obtener perfil por ID:", error);
+    res.status(500).json({ error: "Error del servidor" });
+  }
+});
+//Ruta para obtener invitaciones
+app.get('/api/invitaciones/recibidas', async (req, res) => {
+  try {
+    const freelancerId = req.user?.id;
+    if (!freelancerId) return res.status(401).json({ error: 'No autenticado' });
+
+    const result = await pool.query(`
+     SELECT 
+      i.id,
+      i.freelancer_id,
+      i.project_id,
+      i.sent_at AS created_at,
+      u.name AS emisor_name,
+      p.client_id AS emisor_id,
+      json_build_object(
+        'id', p.id,
+        'title', p.title,
+        'description', p.description,
+        'budget', p.budget,
+        'deadline', p.deadline,
+        'created_at', p.created_at
+      ) AS project
+    FROM proyectos.invitaciones i
+    JOIN proyectos.proyectos p ON i.project_id = p.id
+    JOIN autenticacion.usuarios u ON p.client_id = u.id
+    WHERE i.freelancer_id = $1
+    ORDER BY i.sent_at DESC
+
+    `, [freelancerId]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener invitaciones recibidas' });
+  }
+});
+
+//Ruta para proyectos para invitaciones
+app.get('/api/invitaciones/proyectos-invitables/:freelancer_id', async (req, res) => {
+  try {
+    const clientId = req.user?.id;
+    if (!clientId) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const freelancer_id = req.params.freelancer_id;
+
+    // Obtener proyectos del cliente donde el freelancer no ha sido invitado ni postulado
+    const { rows: proyectos } = await pool.query(
+      `
+      SELECT p.*
+      FROM proyectos.proyectos p
+      WHERE p.client_id = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM proyectos.invitaciones i
+          WHERE i.project_id = p.id AND i.freelancer_id = $2
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM proyectos.propuestas pr
+          WHERE pr.project_id = p.id AND pr.freelancer_id = $2
+        )
+      `,
+      [clientId, freelancer_id]
+    );
+
+    res.json(proyectos);
+
+  } catch (error) {
+    console.error('Error al obtener proyectos invitables:', error);
+    res.status(500).json({ error: 'Error al obtener proyectos invitables' });
+  }
+});
+
+//Ruta para enviar invitaciones
+app.post('/api/invitaciones', async (req, res) => {
+  try {
+    const clientId = req.user?.id;
+    if (!clientId) {
+      return res.status(401).json({ error: "No autenticado" });
+    }
+
+    const { project_id, freelancer_id } = req.body;
+
+    if (!project_id || !freelancer_id) {
+      return res.status(400).json({ error: "Faltan datos necesarios" });
+    }
+
+    // Verificar si ya existe la invitación
+    const { rowCount: invitacionExiste } = await pool.query(
+      `SELECT 1 FROM proyectos.invitaciones 
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [project_id, freelancer_id]
+    );
+
+    if (invitacionExiste > 0) {
+      return res.status(409).json({ error: "Ya se ha enviado una invitación a este freelancer para este proyecto" });
+    }
+
+    // Verificar si el freelancer ya se postuló al proyecto
+    const { rowCount: postulacionExiste } = await pool.query(
+      `SELECT 1 FROM proyectos.propuestas
+       WHERE project_id = $1 AND freelancer_id = $2`,
+      [project_id, freelancer_id]
+    );
+
+    if (postulacionExiste > 0) {
+      return res.status(409).json({ error: "El freelancer ya se postuló a este proyecto" });
+    }
+
+    // Insertar invitación
+    const { rows } = await pool.query(
+      `INSERT INTO proyectos.invitaciones (project_id, freelancer_id) 
+       VALUES ($1, $2) RETURNING *`,
+      [project_id, freelancer_id]
+    );
+
+    res.status(201).json({ mensaje: 'Invitación enviada', invitacion: rows[0] });
+  } catch (error) {
+    console.error('Error al enviar invitación:', error);
+    res.status(500).json({ error: 'Error al enviar la invitación' });
+  }
+});
+
+
 // Ruta protegida: obtener proyectos del usuario autenticado
 app.get("/api/mis-proyectos", (req, res) => {
   const userId = req.user?.id;

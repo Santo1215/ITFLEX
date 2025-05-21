@@ -3,6 +3,7 @@ import '../assets/styles/ProyectosListado.css';
 import Loader from "./Cargando";
 import "../assets/styles/Postulantes.css";
 import BtnVerPostu from "./BotonVerPostu";
+import { Link } from 'react-router-dom';
 
 function tiempoRelativo(fechaString) {
   const fecha = new Date(fechaString);
@@ -21,6 +22,7 @@ function tiempoRelativo(fechaString) {
 }
 
 const MisProyectosListado = () => {
+  const [cargando, setCargando] = useState(true);
   const [proyectos, setProyectos] = useState([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
   const [habilidadesExpandida, setHabilidadesExpandida] = useState({});
@@ -47,23 +49,26 @@ const MisProyectosListado = () => {
   };
   
   useEffect(() => {
-    const API_URL =
-      window.location.hostname === "localhost"
-        ? "http://localhost:5000"
-        : "https://pruebasitflex.onrender.com";
+  const API_URL =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "https://pruebasitflex.onrender.com";
 
-    fetch(`${API_URL}/api/mis-proyectos`, {
-      credentials: 'include'
+  fetch(`${API_URL}/api/mis-proyectos`, {
+    credentials: 'include'
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      setProyectos(data);
+      if (data.length > 0) setProyectoSeleccionado(data[0]);
     })
-      .then((res) => res.json())
-      .then((data) => {
-        setProyectos(data);
-        if (data.length > 0) setProyectoSeleccionado(data[0]);
-      })
-      .catch((error) => {
-        console.error("Error al cargar mis proyectos:", error);
-      });
-  }, []);
+    .catch((error) => {
+      console.error("Error al cargar mis proyectos:", error);
+    })
+    .finally(() => {
+      setCargando(false); // ✅ Indicamos que la carga terminó
+    });
+}, []);
 
   // Función async para cargar postulaciones de un proyecto
   const cargarPostulaciones = async (projectId) => {
@@ -101,7 +106,8 @@ const MisProyectosListado = () => {
     setPostulaciones([]);
   };
 
-  if (proyectos.length === 0) return <Loader />;
+ if (cargando) return <Loader />;
+ if (!cargando && proyectos.length === 0) return <p>No tienes proyectos publicados aún.</p>;
 
   return (
     <div className="proyectos-container">
@@ -169,7 +175,7 @@ const MisProyectosListado = () => {
               ) : (
                 postulaciones.map((postulacion) => (
                   <div key={postulacion.id} className="postulacion-card">
-                    <p><strong>Freelancer:</strong> {postulacion.freelancer_name || 'Nombre no disponible'}</p>
+                    <p><strong>Freelancer:</strong> <Link  class="usuario" to={`/perfil/${postulacion.freelancer_id}`}> {postulacion.freelancer_name || "Nombre no disponible"}</Link></p>
                     
                     {/* Mostrar habilidades */}
                     <div className="habilidades-linea">

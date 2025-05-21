@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import '../assets/styles/ProyectosListado.css';
 import Loader from "./Cargando";
 import BotonPostulacion from "./BotonPostular";
+import { Link } from "react-router-dom";
 
 // Función para mostrar "Hace X tiempo"
 function tiempoRelativo(fechaString) {
@@ -80,7 +81,7 @@ const ProyectosListado = () => {
           >
             <h3>{proyecto.title}</h3>
             <div className="proyecto-info">
-              <span>{proyecto.nombre_cliente || "Sin nombre"}</span>
+              <span><Link  class="usuario" to={`/perfil/${proyecto.client_id}`}>{proyecto.nombre_cliente || "Sin nombre"}</Link></span>
               <span className="calificacion">
                 ★ {proyecto.calificacion || "N/A"}
               </span>
@@ -107,7 +108,7 @@ const ProyectosListado = () => {
           <h2>{proyectoSeleccionado.title}</h2>
           <div className="detalle-header">
             <div>
-              <span>{proyectoSeleccionado.nombre_cliente || "Sin nombre"}</span>
+              <span><Link  class="usuario" to={`/perfil/${proyectoSeleccionado.client_id}`}>{proyectoSeleccionado.nombre_cliente || "Sin nombre"}</Link></span>
               <span className="calificacion">
                 ★ {proyectoSeleccionado.calificacion || "N/A"}
               </span>
