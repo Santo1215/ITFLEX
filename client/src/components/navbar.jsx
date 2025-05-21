@@ -90,7 +90,7 @@ function Navbar() {
           <a href="#">
             <div className="menu-item">Ver propuestas</div>
           </a>
-          <a href="/Proyectos">
+          <a href="/MisProyectos">
             <div className="menu-item">Mis proyectos</div>
           </a>
           <a href="/Chats">

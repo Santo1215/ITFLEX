@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import '../assets/styles/ProyectosListado.css';
+import Loader from "./Cargando";
+import BotonPostulacion from "./BotonPostular";
 
 // Función para mostrar "Hace X tiempo"
 function tiempoRelativo(fechaString) {
@@ -21,16 +23,38 @@ function tiempoRelativo(fechaString) {
 const ProyectosListado = () => {
   const [proyectos, setProyectos] = useState([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
+  const [usuarioActual, setUsuarioActual] = useState(null);
+  const [proyectosPostulados, setProyectosPostulados] = useState([]);
 
- useEffect(() => {
+  useEffect(() => {
   const API_URL =
     window.location.hostname === "localhost"
       ? "http://localhost:5000"
       : "https://pruebasitflex.onrender.com";
 
-  fetch(`${API_URL}/api/proyectos`, {
-    credentials: 'include'
-  })
+  // Obtener usuario actual
+  fetch(`${API_URL}/api/user`, { credentials: "include" })
+    .then((res) => res.json())
+    .then((data) => {
+      setUsuarioActual(data);
+
+      // Una vez tengas el usuario, obtener postulaciones
+      if (data && data.id) {
+        fetch(`${API_URL}/api/postulaciones/usuario/${data.id}`, { credentials: "include" })
+          .then((res) => res.json())
+          .then((postulaciones) => {
+            const postuladosIds = postulaciones.map((p) => p.project_id);
+            setProyectosPostulados(postuladosIds);
+          })
+          .catch((err) => {
+            console.error("Error al obtener postulaciones:", err);
+          });
+      }
+    })
+    .catch((err) => console.error("Error al obtener usuario:", err));
+
+  // Obtener proyectos
+  fetch(`${API_URL}/api/proyectos`, { credentials: "include" })
     .then((res) => res.json())
     .then((data) => {
       setProyectos(data);
@@ -41,11 +65,10 @@ const ProyectosListado = () => {
     });
 }, []);
 
-  if (proyectos.length === 0) return <p>Cargando proyectos...</p>;
+  if (proyectos.length === 0) return <Loader/>;
 
   return (
     <div className="proyectos-container">
-      {/* Listado de proyectos (más a la izquierda) */}
       <div className="proyectos-listado-izquierdo">
         {proyectos.map((proyecto) => (
           <div
@@ -57,7 +80,7 @@ const ProyectosListado = () => {
           >
             <h3>{proyecto.title}</h3>
             <div className="proyecto-info">
-              <span>{proyectoSeleccionado.nombre_cliente || "Sin nombre"}</span>
+              <span>{proyecto.nombre_cliente || "Sin nombre"}</span>
               <span className="calificacion">
                 ★ {proyecto.calificacion || "N/A"}
               </span>
@@ -95,7 +118,10 @@ const ProyectosListado = () => {
                 ${proyectoSeleccionado.budget?.toLocaleString() || 0}
               </span>
             </div>
-            <div className="tiempo" title={new Date(proyectoSeleccionado.created_at).toLocaleString()}>
+            <div
+              className="tiempo"
+              title={new Date(proyectoSeleccionado.created_at).toLocaleString()}
+            >
               {tiempoRelativo(proyectoSeleccionado.created_at)}
             </div>
           </div>
@@ -103,8 +129,12 @@ const ProyectosListado = () => {
           <div className="descripcion">
             <p>{proyectoSeleccionado.description || "Descripción no disponible"}</p>
           </div>
-
-          <button className="postularme-btn">Postularme</button>
+          
+          {/* Mostrar botón solo si usuarioActual existe y no es el creador */}
+          
+          {usuarioActual && usuarioActual.id !== proyectoSeleccionado.client_id && (
+            <BotonPostulacion proyecto={proyectoSeleccionado} usuarioActual={usuarioActual} postulados={proyectosPostulados} setPostulados={setProyectosPostulados}/>
+          )}
 
           {proyectoSeleccionado.comentarios && (
             <div className="comentarios-section">

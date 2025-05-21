@@ -133,6 +133,7 @@ app.get('/auth/google/callback',
 app.get('/api/user', (req, res) => {
   if (req.isAuthenticated()) {
     res.json({
+      id: req.user.id,   
       name: req.user.name,
       email: req.user.email,
       avatar: req.user.avatar_url,
@@ -160,17 +161,52 @@ app.post("/api/proyectos", async (req, res) => {
 });
 
 app.get("/api/proyectos", async (req, res) => {
+  const freelancerId = req.user?.id;
+
   try {
-    const result = await pool.query(`
+    // Traer todos los proyectos con info del cliente
+    const proyectosResult = await pool.query(`
       SELECT p.*, u.name AS nombre_cliente
       FROM proyectos.proyectos p
       JOIN autenticacion.usuarios u ON p.client_id = u.id
       ORDER BY p.created_at DESC
     `);
-    res.json(result.rows);
+
+    let idsPostulados = [];
+
+    if (freelancerId) {
+      // Buscar proyectos en los que el freelancer ya se postuló
+      const postulacionesResult = await pool.query(
+        `SELECT project_id FROM proyectos.propuestas WHERE freelancer_id = $1`,
+        [freelancerId]
+      );
+      idsPostulados = postulacionesResult.rows.map(r => r.project_id);
+    }
+
+    // Agregar el campo ya_postulado
+    const proyectosConPostulacion = proyectosResult.rows.map(proyecto => ({
+      ...proyecto,
+      ya_postulado: idsPostulados.includes(proyecto.id),
+    }));
+
+    res.json(proyectosConPostulacion);
   } catch (error) {
     console.error("Error al obtener proyectos:", error);
     res.status(500).json({ error: "Error al obtener proyectos" });
+  }
+});
+
+app.get('/api/postulaciones/usuario/:freelancerId', async (req, res) => {
+  try {
+    const freelancerId = req.params.freelancerId;
+    const result = await pool.query(
+      'SELECT project_id FROM proyectos.propuestas WHERE freelancer_id = $1',
+      [freelancerId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener postulaciones del usuario' });
   }
 });
 
@@ -315,6 +351,74 @@ app.put("/api/perfil", async (req, res) => {
   } catch (error) {
     console.error("Error actualizando perfil:", error);
     res.status(500).json({ error: "Error actualizando perfil" });
+  }
+});
+
+// Ruta protegida: obtener proyectos del usuario autenticado
+app.get("/api/mis-proyectos", (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "No autenticado" });
+
+  pool.query("SELECT * FROM proyectos.proyectos WHERE client_id = $1", [userId])
+    .then((result) => res.json(result.rows))
+    .catch((err) => {
+      console.error("Error al obtener proyectos del usuario:", err);
+      res.status(500).json({ error: "Error del servidor" });
+    });
+});
+
+app.post('/api/postulaciones', async (req, res) => {
+  const { project_id, freelancer_id, proposal_text, proposed_budget, estimated_days } = req.body;
+
+  try {
+    const resultado = await pool.query(
+      `INSERT INTO proyectos.propuestas 
+       (project_id, freelancer_id, proposal_text, proposed_budget, estimated_days) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [project_id, freelancer_id, proposal_text, proposed_budget, estimated_days]
+    );
+
+    res.status(201).json({ mensaje: 'Postulación registrada', postulación: resultado.rows[0] });
+  } catch (error) {
+    console.error('Error al registrar la postulación:', error.message);
+    res.status(500).json({ error: 'Error al registrar la postulación' });
+  }
+});
+
+app.get('/api/postulaciones/proyecto/:projectId', async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const resultado = await pool.query(`
+      SELECT 
+        p.id,
+        p.proposal_text,
+        p.proposed_budget,
+        p.estimated_days,
+        p.created_at,
+        u.id AS freelancer_id,
+        u.name AS freelancer_name,
+        u.email AS freelancer_email,
+        u.avatar_url,
+        COALESCE(
+          json_agg(
+            DISTINCT h.name
+          ) FILTER (WHERE h.name IS NOT NULL),
+          '[]'
+        ) AS habilidades
+      FROM proyectos.propuestas p
+      JOIN autenticacion.usuarios u ON p.freelancer_id = u.id
+      LEFT JOIN usuarios.user_habilidades uh ON u.id = uh.user_id
+      LEFT JOIN compartido.habilidades h ON uh.skill_id = h.id
+      WHERE p.project_id = $1
+      GROUP BY p.id, u.id
+      ORDER BY p.created_at DESC
+    `, [projectId]);
+
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error('Error al obtener postulaciones:', error);
+    res.status(500).json({ error: 'Error al obtener postulaciones' });
   }
 });
 
