@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import '../assets/styles/ProyectosListado.css';
 import Loader from "./Cargando";
-import BotonPostulacion from "./BotonPostular";
+import FormularioPostulacion from './FormularioPostular';
 import { Link } from "react-router-dom";
+import {BotonPostulacion} from "./BotonPostularAbrir";
 
 // Función para mostrar "Hace X tiempo"
 function tiempoRelativo(fechaString) {
@@ -26,47 +27,61 @@ const ProyectosListado = () => {
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
   const [proyectosPostulados, setProyectosPostulados] = useState([]);
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const estaPostulado = proyectoSeleccionado
+    ? proyectosPostulados.includes(proyectoSeleccionado.id)
+    : false;
 
   useEffect(() => {
-  const API_URL =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000"
-      : "https://pruebasitflex.onrender.com";
+    const API_URL =
+      window.location.hostname === "localhost"
+        ? "http://localhost:5000"
+        : "https://pruebasitflex.onrender.com";
 
-  // Obtener usuario actual
-  fetch(`${API_URL}/api/user`, { credentials: "include" })
-    .then((res) => res.json())
-    .then((data) => {
-      setUsuarioActual(data);
+    // Obtener usuario actual
+    fetch(`${API_URL}/api/user`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setUsuarioActual(data);
 
-      // Una vez tengas el usuario, obtener postulaciones
-      if (data && data.id) {
-        fetch(`${API_URL}/api/postulaciones/usuario/${data.id}`, { credentials: "include" })
-          .then((res) => res.json())
-          .then((postulaciones) => {
-            const postuladosIds = postulaciones.map((p) => p.project_id);
-            setProyectosPostulados(postuladosIds);
-          })
-          .catch((err) => {
-            console.error("Error al obtener postulaciones:", err);
-          });
-      }
-    })
-    .catch((err) => console.error("Error al obtener usuario:", err));
+        // Obtener postulaciones del usuario
+        if (data && data.id) {
+          fetch(`${API_URL}/api/postulaciones/usuario/${data.id}`, { credentials: "include" })
+            .then((res) => res.json())
+            .then((postulaciones) => {
+              const postuladosIds = postulaciones.map((p) => p.project_id);
+              setProyectosPostulados(postuladosIds);
+            })
+            .catch((err) => {
+              console.error("Error al obtener postulaciones:", err);
+            });
+        }
+      })
+      .catch((err) => console.error("Error al obtener usuario:", err));
 
-  // Obtener proyectos
-  fetch(`${API_URL}/api/proyectos`, { credentials: "include" })
-    .then((res) => res.json())
-    .then((data) => {
-      setProyectos(data);
-      if (data.length > 0) setProyectoSeleccionado(data[0]);
-    })
-    .catch((error) => {
-      console.error("Error al cargar proyectos:", error);
-    });
-}, []);
+    // Obtener proyectos
+    fetch(`${API_URL}/api/proyectos`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setProyectos(data);
+        if (data.length > 0) setProyectoSeleccionado(data[0]);
+      })
+      .catch((error) => {
+        console.error("Error al cargar proyectos:", error);
+      });
+  }, []);
 
-  if (proyectos.length === 0) return <Loader/>;
+  if (proyectos.length === 0) return <Loader />;
+
+
+   const abrirModal = (proyecto) => {
+    setProyectoSeleccionado(proyecto);
+    setMostrarModal(true);
+  };
+
+  const handleCerrarModal = () => {
+    setMostrarModal(false);
+  };
 
   return (
     <div className="proyectos-container">
@@ -81,7 +96,11 @@ const ProyectosListado = () => {
           >
             <h3>{proyecto.title}</h3>
             <div className="proyecto-info">
-              <span><Link  class="usuario" to={`/perfil/${proyecto.client_id}`}>{proyecto.nombre_cliente || "Sin nombre"}</Link></span>
+              <span>
+                <Link className="usuario" to={ usuarioActual && String(usuarioActual.id) === String(proyectoSeleccionado.client_id)
+                  ? "/MiPerfil"
+                  : `/perfil/${proyecto.client_id}`}>{proyectoSeleccionado.nombre_cliente || "Sin nombre"} </Link>
+              </span>
               <span className="calificacion">
                 ★ {proyecto.calificacion || "N/A"}
               </span>
@@ -108,7 +127,12 @@ const ProyectosListado = () => {
           <h2>{proyectoSeleccionado.title}</h2>
           <div className="detalle-header">
             <div>
-              <span><Link  class="usuario" to={`/perfil/${proyectoSeleccionado.client_id}`}>{proyectoSeleccionado.nombre_cliente || "Sin nombre"}</Link></span>
+              <span>
+                <Link className="usuario" to={ usuarioActual && String(usuarioActual.id) === String(proyectoSeleccionado.client_id)
+                  ? "/MiPerfil"
+                  : `/perfil/${proyectoSeleccionado.client_id}`}>{proyectoSeleccionado.nombre_cliente || "Sin nombre"} </Link>
+
+              </span>
               <span className="calificacion">
                 ★ {proyectoSeleccionado.calificacion || "N/A"}
               </span>
@@ -130,11 +154,27 @@ const ProyectosListado = () => {
           <div className="descripcion">
             <p>{proyectoSeleccionado.description || "Descripción no disponible"}</p>
           </div>
-          
-          {/* Mostrar botón solo si usuarioActual existe y no es el creador */}
-          
-          {usuarioActual && usuarioActual.id !== proyectoSeleccionado.client_id && (
-            <BotonPostulacion proyecto={proyectoSeleccionado} usuarioActual={usuarioActual} postulados={proyectosPostulados} setPostulados={setProyectosPostulados}/>
+
+          {/* Mostrar botón para abrir formulario solo si usuario existe y no es el creador */}
+           {usuarioActual &&
+           usuarioActual.id !== proyectoSeleccionado.client_id &&
+           !mostrarModal && (
+            <BotonPostulacion
+              onClick={() => abrirModal(proyectoSeleccionado)}
+              disabled={estaPostulado}
+              texto={estaPostulado ? "Postulado" : "Postularme"}
+            />
+          )}
+
+          {/* Mostrar formulario solo si mostrarModal es true */}
+          {mostrarModal && (
+            <FormularioPostulacion
+              proyecto={proyectoSeleccionado}
+              usuarioActual={usuarioActual}
+              postulados={proyectosPostulados}
+              setPostulados={setProyectosPostulados}
+              onClose={handleCerrarModal}
+            />
           )}
 
           {proyectoSeleccionado.comentarios && (

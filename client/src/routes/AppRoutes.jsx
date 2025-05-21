@@ -7,7 +7,7 @@ import NotFound from '../pages/NotFound';
 import MisProyectos from '../pages/MisProyectos';
 import PerfilUsuario from "../pages/PerfilUsuario";
 import VerPropuestas from '../pages/VerPropuestas';
-
+import Chats from '../pages/Chats';
 
 function AppRoutes({ activeModal, onOpenModal, onCloseModal }) {
     // Aquí puedes definir las rutas de tu aplicación
@@ -20,6 +20,7 @@ function AppRoutes({ activeModal, onOpenModal, onCloseModal }) {
         <Route path="/VerPropuestas" element={<VerPropuestas />} />
         <Route path="/MiPerfil" element={<MiPerfil />} />
         <Route path="/Perfil/:id" element={<PerfilUsuario />} />
+        <Route path="/Chats/:id" element={<Chats />} />
         <Route path="*" element={<NotFound />} />
         </Routes>
     );

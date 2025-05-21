@@ -576,6 +576,7 @@ app.get('/api/postulaciones/proyecto/:projectId', async (req, res) => {
         p.proposed_budget,
         p.estimated_days,
         p.created_at,
+        p.status,
         u.id AS freelancer_id,
         u.name AS freelancer_name,
         u.email AS freelancer_email,
@@ -601,6 +602,158 @@ app.get('/api/postulaciones/proyecto/:projectId', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener postulaciones' });
   }
 });
+
+// Ruta para aceptar propuesta (actualiza el status)
+app.put('/api/postulaciones/:postulacionId/aceptar', async (req, res) => {
+  const { postulacionId } = req.params;
+
+  try {
+    const resultado = await pool.query(`
+      UPDATE proyectos.propuestas
+      SET status = 'Aceptada'
+      WHERE id = $1
+      RETURNING *;
+    `, [postulacionId]);
+
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({ error: "Propuesta no encontrada" });
+    }
+
+    res.json({ mensaje: "Propuesta aceptada", propuesta: resultado.rows[0] });
+  } catch (error) {
+    console.error("Error al aceptar propuesta:", error);
+    res.status(500).json({ error: "Error al aceptar propuesta" });
+  }
+});
+
+// Ruta para rechazar propuesta (elimina la propuesta)
+app.delete('/api/postulaciones/:postulacionId/rechazar', async (req, res) => {
+  const { postulacionId } = req.params;
+
+  try {
+    const resultado = await pool.query(`
+      DELETE FROM proyectos.propuestas
+      WHERE id = $1
+      RETURNING *;
+    `, [postulacionId]);
+
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({ error: "Propuesta no encontrada" });
+    }
+
+    res.json({ mensaje: "Propuesta rechazada y eliminada" });
+  } catch (error) {
+    console.error("Error al rechazar propuesta:", error);
+    res.status(500).json({ error: "Error al rechazar propuesta" });
+  }
+});
+
+app.post('/api/chats/existing', async (req, res) => {
+  const { freelancer_id, cliente_id } = req.body;
+
+  if (!freelancer_id || !cliente_id) {
+    return res.status(400).json({ error: 'Faltan parámetros' });
+  }
+
+  try {
+    const result = await pool.query(
+      'SELECT * FROM mensajes.chat WHERE freelancer_id = $1 AND cliente_id = $2',
+      [freelancer_id, cliente_id]
+    );
+
+    if (result.rows.length > 0) {
+      res.json({ exists: true, chat: result.rows[0] });
+    } else {
+      res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error('Error en consulta /api/chats/existing:', error);
+    res.status(500).json({ error: 'Error en la consulta de chats' });
+  }
+});
+
+app.get('/api/chats/:userId', async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const query = `
+      SELECT c.chat_id, c.cliente_id, c.freelancer_id,
+             u.id AS interlocutor_id, u.name AS interlocutor_nombre
+      FROM mensajes.chat c
+      JOIN autenticacion.usuarios u ON (
+        (c.cliente_id = $1 AND u.id = c.freelancer_id)
+        OR
+        (c.freelancer_id = $1 AND u.id = c.cliente_id)
+      )
+      WHERE c.cliente_id = $1 OR c.freelancer_id = $1
+    `;
+
+    const { rows } = await pool.query(query, [userId]);
+
+    if (rows.length === 0) return res.status(404).json({ error: 'No chats found' });
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching chats:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/chats', async (req, res) => {
+  const { freelancer_id, cliente_id } = req.body;
+  try {
+    const insertResult = await pool.query(
+      'INSERT INTO mensajes.chat (freelancer_id, cliente_id) VALUES ($1, $2) RETURNING chat_id',
+      [freelancer_id, cliente_id]
+    );
+    res.json({ chat_id: insertResult.rows[0].chat_id });
+  } catch (error) {
+    console.error('Error creando chat:', error);
+    res.status(500).json({ error: 'Error creando chat' });
+  }
+});
+
+
+app.get('/api/buscar', async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ error: 'Falta parámetro de búsqueda' });
+
+  try {
+    const resultados = await pool.query(`
+      SELECT 
+        'proyecto' AS tipo,
+        id AS id,
+        title AS nombre,
+        description AS extra_info,
+        NULL AS habilidades
+      FROM proyectos.proyectos
+      WHERE LOWER(title) LIKE LOWER($1)
+
+      UNION
+
+      SELECT
+        'usuario' AS tipo,
+        u.id AS id,
+        u.name AS nombre,
+        u.email AS extra_info,
+        COALESCE(STRING_AGG(h.name, ', '), '') AS habilidades
+      FROM autenticacion.usuarios u
+      LEFT JOIN usuarios.user_habilidades uh ON uh.user_id = u.id
+      LEFT JOIN compartido.habilidades h ON uh.skill_id = h.id
+      WHERE LOWER(u.name) LIKE LOWER($1) OR LOWER(h.name) LIKE LOWER($1)
+      GROUP BY u.id, u.name, u.email
+
+      ORDER BY nombre;
+    `, [`%${query}%`]);
+
+    res.json(resultados.rows);
+  } catch (error) {
+    console.error('Error en búsqueda:', error);
+    res.status(500).json({ error: 'Error en la búsqueda' });
+  }
+});
+
+
 
 // Producción: servir React
 if (process.env.NODE_ENV === 'production') {

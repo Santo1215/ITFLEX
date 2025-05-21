@@ -1,11 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const BotonCancelar = ({ onClick, className = "" }) => {
+const BotonCancelar = ({ onClick, className = "" , texto = "Cancelar"}) => {
   return (
     <StyledWrapper>
       <button className={`boton-cancelar ${className}`} type="button" onClick={onClick}>
-        <span className="texto">Cancelar</span>
+        <span className="texto">{texto}</span>
         <span className="icono">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path

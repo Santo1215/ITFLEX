@@ -1,16 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import styled from "styled-components";
 
-const BotonPostulacion = ({ proyecto, usuarioActual, postulados, setPostulados }) => {
-  // Verificar si ya está postulado
+const BotonPostulacion = ({
+  proyecto,
+  usuarioActual,
+  postulados,
+  setPostulados,
+  presupuesto,
+  dias,
+  descripcion,
+  onPostular
+}) => {
   const estaPostulado = postulados.includes(proyecto.id);
 
   const handleClick = async () => {
     try {
-      // Aquí llamas al backend para guardar la postulación
-      const API_URL = window.location.hostname === "localhost"
-        ? "http://localhost:5000"
-        : "https://pruebasitflex.onrender.com";
+      const API_URL =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000"
+          : "https://pruebasitflex.onrender.com";
 
       const response = await fetch(`${API_URL}/api/postulaciones`, {
         method: "POST",
@@ -19,18 +27,17 @@ const BotonPostulacion = ({ proyecto, usuarioActual, postulados, setPostulados }
         body: JSON.stringify({
           project_id: proyecto.id,
           freelancer_id: usuarioActual.id,
-          proposal_text: "Estoy interesado en este proyecto",
-          proposed_budget: proyecto.budget,
-          estimated_days: 15,
+          proposal_text: descripcion,
+          proposed_budget: presupuesto,
+          estimated_days: dias,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Error al registrar la postulación");
-      }
+      if (!response.ok) throw new Error("Error al registrar la postulación");
 
-      // Actualizamos el estado para que este botón cambie solo para este proyecto
       setPostulados([...postulados, proyecto.id]);
+
+      if (onPostular) onPostular();
 
     } catch (error) {
       console.error(error);
@@ -69,7 +76,7 @@ const StyledWrapper = styled.div`
   }
 
   button.postulado {
-    background-color: #10b981; /* verde */
+    background-color: #10b981;
     cursor: default;
   }
 

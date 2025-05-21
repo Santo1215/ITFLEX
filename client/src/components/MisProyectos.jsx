@@ -4,6 +4,9 @@ import Loader from "./Cargando";
 import "../assets/styles/Postulantes.css";
 import BtnVerPostu from "./BotonVerPostu";
 import { Link } from 'react-router-dom';
+import BotonCancelar from "./BotonCancelar";
+import BotonGuardar from "./BotonGuardar";
+import { IrChat } from './BotonPostularAbrir';
 
 function tiempoRelativo(fechaString) {
   const fecha = new Date(fechaString);
@@ -22,6 +25,7 @@ function tiempoRelativo(fechaString) {
 }
 
 const MisProyectosListado = () => {
+  const [usuarioActual, setUsuarioActual] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [proyectos, setProyectos] = useState([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
@@ -47,13 +51,65 @@ const MisProyectosListado = () => {
       setPostulaciones([]);
     }
   };
-  
-  useEffect(() => {
   const API_URL =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000"
-      : "https://pruebasitflex.onrender.com";
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://pruebasitflex.onrender.com";
 
+const aceptarPropuesta = async (postulacionId) => {
+  try {
+    const res = await fetch(`${API_URL}/api/postulaciones/${postulacionId}/aceptar`, {
+      method: "PUT",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Error al aceptar propuesta");
+
+    // Actualizar estado local para reflejar el cambio
+    setPostulaciones((prev) =>
+      prev.map((p) =>
+        p.id === postulacionId ? { ...p, status: "Aceptada" } : p
+      )
+    );
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo aceptar la propuesta.");
+  }
+};
+
+const rechazarPropuesta = async (postulacionId) => {
+  try {
+    const res = await fetch(`${API_URL}/api/postulaciones/${postulacionId}/rechazar`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Error al rechazar propuesta");
+
+    // Eliminar del estado local
+    setPostulaciones((prev) => prev.filter((p) => p.id !== postulacionId));
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo rechazar la propuesta.");
+  }
+};
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/user`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('No autorizado');
+      return res.json();
+    })
+    .then(data => setUsuarioActual(data))
+    .catch(() => setUsuarioActual(null));
+  }, []);
+
+  useEffect(() => {
   fetch(`${API_URL}/api/mis-proyectos`, {
     credentials: 'include'
   })
@@ -66,7 +122,7 @@ const MisProyectosListado = () => {
       console.error("Error al cargar mis proyectos:", error);
     })
     .finally(() => {
-      setCargando(false); // ✅ Indicamos que la carga terminó
+      setCargando(false);
     });
 }, []);
 
@@ -206,6 +262,14 @@ const MisProyectosListado = () => {
                     <p><strong>Presupuesto propuesto:</strong> ${postulacion.proposed_budget?.toLocaleString()}</p>
                     <p><strong>Días estimados:</strong> {postulacion.estimated_days}</p>
                     <p><strong>Estado:</strong> {postulacion.status}</p>
+                    {postulacion.status !== "Aceptada" ? (
+                      <div className="botones-edicion">
+                        <BotonCancelar className="pequeno" texto="Rechazar" onClick={() => rechazarPropuesta(postulacion.id)} />
+                        <BotonGuardar tamaño="pequeño" texto="Aceptar" onClick={() => aceptarPropuesta(postulacion.id)} />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><p>Propuesta aceptada</p> <IrChat usuarioLogueadoId={usuarioActual.id} usuarioPropuestaId={postulacion.freelancer_id}/></div>  
+                    )}
                   </div>
                 ))
               )}

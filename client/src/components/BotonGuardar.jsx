@@ -1,14 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const BotonGuardar = ({ onClick, tamaño = "normal" }) => {
+const BotonGuardar = ({ onClick, tamaño = "normal", texto = "Guardar" }) => {
   return (
     <StyledWrapper>
       <button
         onClick={onClick}
         className={tamaño === "pequeño" ? "pequeno" : ""}
       >
-        Guardar
+        {texto}
       </button>
     </StyledWrapper>
   );

@@ -1,19 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../assets/styles/Navbar.css';
 import logo from '../assets/media/logo.png';
+import { Link } from 'react-router-dom';
 
 function Navbar() {
   const [nombreUsuario, setNombreUsuario] = useState('Cargando...');
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const [resultados, setResultados] = useState([]);
+  const [mostrarDropdown, setMostrarDropdown] = useState(false);
+  const [usuarioActual, setUsuarioActual] = useState(null);
+  
+  const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://pruebasitflex.onrender.com';
+
+  // Ref para el debounce
+  const debounceTimeout = useRef(null);
 
   useEffect(() => {
-    // Usa la URL de la API según entorno
-    const API_URL = window.location.hostname === 'localhost'
-      ? 'http://localhost:5000'
-      : 'https://pruebasitflex.onrender.com';
-
     fetch(`${API_URL}/api/user`, {
       method: 'GET',
-      credentials: 'include',  // para enviar cookies/sesión
+      credentials: 'include',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -24,7 +32,6 @@ function Navbar() {
       return response.json();
     })
     .then(data => {
-      console.log('Respuesta API /api/user:', data);
       if (data.name) {
         const primerNombre = data.name.split(' ')[0];
         const nombreFormateado = 
@@ -33,20 +40,11 @@ function Navbar() {
       } else {
         setNombreUsuario('Invitado');
       }
+      setUsuarioActual(data);
     })
-    .catch(error => {
-      console.error('Error al obtener usuario:', error);
-      setNombreUsuario('Invitado');
-    });
-
+    .catch(() => setNombreUsuario('Invitado'));
   }, []);
-  const [menuVisible, setMenuVisible] = useState(false);
 
-  const toggleMenu = () => {
-    setMenuVisible(prev => !prev);
-  };
-
-  // Opcional: cerrar menú si clickeas afuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.menu-usuario')) {
@@ -57,6 +55,51 @@ function Navbar() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  const toggleMenu = () => setMenuVisible(prev => !prev);
+
+  // Nueva función que hace la búsqueda con debounce
+  const handleChangeBusqueda = (e) => {
+    const valor = e.target.value;
+    setBusqueda(valor);
+
+    // Si hay un timeout pendiente, lo limpiamos
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
+    // Solo buscamos si hay texto (evita búsquedas vacías)
+    if (valor.trim().length > 0) {
+      debounceTimeout.current = setTimeout(() => {
+        hacerBusqueda(valor);
+      }, 300); // 300 ms de espera antes de buscar
+    } else {
+      setResultados([]);
+      setMostrarDropdown(false);
+    }
+  };
+
+  const hacerBusqueda = async (query) => {
+    try {
+      const response = await fetch(`${API_URL}/api/buscar?query=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error('Error en la búsqueda');
+      const data = await response.json();
+
+      setResultados(data);
+      setMostrarDropdown(true);
+    } catch (error) {
+      console.error('Error en la búsqueda:', error);
+      setResultados([]);
+      setMostrarDropdown(false);
+    }
+  };
+
+  // Función para buscar al presionar Enter o al hacer click (opcional)
+  const handleBuscar = () => {
+    if (busqueda.trim().length > 0) {
+      hacerBusqueda(busqueda);
+    }
+  };
+
   return (
     <nav className="navbar">
       <a href="/Home" className="logo">
@@ -64,15 +107,46 @@ function Navbar() {
       </a>
 
       <div className="search-bar">
-        <input type="text" placeholder="Buscar proyectos, freelancers ..." />
-        <button>
+        <input
+          type="text"
+          placeholder="Buscar proyectos, freelancers ..."
+          value={busqueda}
+          onChange={handleChangeBusqueda}
+          onKeyDown={(e) => e.key === 'Enter' && handleBuscar()}
+        />
+        <button onClick={handleBuscar}>
           <img
             src="https://cdn-icons-png.flaticon.com/512/622/622669.png"
             alt="buscar"
             className="icono"
           />
         </button>
-      </div>
+
+        {mostrarDropdown && resultados.length > 0 && (
+          <div className="dropdown-resultados">
+            {resultados.map((item, index) => (
+              <div key={index} className="dropdown-item">
+                <strong>{item.tipo.toUpperCase()}</strong>:{' '}
+                {item.tipo === 'usuario' ? (<Link className="usuario" to={ 
+                  usuarioActual && String(usuarioActual.id) === String(item.id)? "/MiPerfil": `/perfil/${item.id}`}>
+                  {item.nombre}</Link>) : (item.nombre)}
+
+
+                {item.tipo === 'usuario' && item.habilidades && item.habilidades.length > 0 && (
+                  <div className="extra-info">
+                    Habilidades: {item.habilidades}
+                  </div>
+                )}
+
+                {item.extra_info && item.tipo !== 'usuario' && (
+                  <div className="extra-info">{item.extra_info}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+</div>
 
       <div className="menu-usuario">
         <span>
@@ -93,9 +167,13 @@ function Navbar() {
           <a href="/MisProyectos">
             <div className="menu-item">Mis proyectos</div>
           </a>
-          <a href="/Chats">
-            <div className="menu-item">Chats</div>
-          </a>
+          {usuarioActual && usuarioActual.id ? (
+              <Link to={`/Chats/${usuarioActual.id}`}>
+                <div className="menu-item">Chats</div>
+              </Link>
+            ) : (
+              <div className="menu-item">Chats</div>
+            )}
         </div>
       </div>
 
