@@ -1,0 +1,83 @@
+.container {
+    display: flex;
+    width: 100%;
+    min-height: 600px;
+    align-items: stretch;
+}
+
+.textSection {
+    background-color: #001F3F;
+    color: white;
+    padding: 60px;
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.textSection h1 {
+    font-size: 2.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.textSection p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 1.2rem;
+    color: #e0e0e0;
+}
+
+.ctaButton {
+    background-color: #0056b3;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 2rem;
+    align-self: flex-start;
+    transition: all 0.3s ease;
+}
+
+.ctaButton:hover {
+    background-color: #0077ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.imageSection {
+    width: 50%;
+    position: relative;
+    overflow: hidden;
+}
+
+.imageSection img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+@media (max-width: 1024px) {
+    .container {
+        flex-direction: column-reverse;
+        min-height: auto;
+    }
+    
+    .textSection,
+    .imageSection {
+        width: 100%;
+    }
+    
+    .textSection {
+        padding: 40px 20px;
+    }
+    
+    .ctaButton {
+        align-self: center;
+    }
+}
