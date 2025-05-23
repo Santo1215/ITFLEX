@@ -421,6 +421,7 @@ app.get('/api/invitaciones/recibidas', async (req, res) => {
       i.id,
       i.freelancer_id,
       i.project_id,
+      i.status,
       i.sent_at AS created_at,
       u.name AS emisor_name,
       p.client_id AS emisor_id,
@@ -530,6 +531,51 @@ app.post('/api/invitaciones', async (req, res) => {
   } catch (error) {
     console.error('Error al enviar invitación:', error);
     res.status(500).json({ error: 'Error al enviar la invitación' });
+  }
+});
+
+// Ruta para aceptar invitación (actualiza status a 'aceptada')
+app.post('/api/invitaciones/aceptar/:id', async (req, res) => {
+  const invitacionId = req.params.id;
+
+  try {
+    // Actualiza el estado a 'aceptada'
+    const result = await pool.query(
+      `UPDATE proyectos.invitaciones SET status = 'Aceptada' WHERE id = $1 RETURNING *`,
+      [invitacionId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Invitación no encontrada" });
+    }
+
+    res.json({ mensaje: "Invitación aceptada", invitacion: result.rows[0] });
+  } catch (error) {
+    console.error('Error aceptando invitación:', error);
+    res.status(500).json({ error: 'Error del servidor al aceptar invitación' });
+  }
+});
+
+
+// Ruta para rechazar invitación (elimina de la base)
+app.post('/api/invitaciones/rechazar/:id', async (req, res) => {
+  const invitacionId = req.params.id;
+
+  try {
+    // Elimina la invitación
+    const result = await pool.query(
+      `DELETE FROM proyectos.invitaciones WHERE id = $1 RETURNING *`,
+      [invitacionId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Invitación no encontrada" });
+    }
+
+    res.json({ mensaje: "Invitación rechazada y eliminada" });
+  } catch (error) {
+    console.error('Error rechazando invitación:', error);
+    res.status(500).json({ error: 'Error del servidor al rechazar invitación' });
   }
 });
 
@@ -673,29 +719,37 @@ app.post('/api/chats/existing', async (req, res) => {
 });
 
 app.get('/api/chats/:userId', async (req, res) => {
-  const userId = req.params.userId;
+  const { userId } = req.params;
 
   try {
     const query = `
-      SELECT c.chat_id, c.cliente_id, c.freelancer_id,
-             u.id AS interlocutor_id, u.name AS interlocutor_nombre
+      SELECT 
+        c.chat_id,
+        u.id AS interlocutor_id,
+        u.name AS interlocutor_nombre,
+        u.avatar_url,
+        c.cliente_id,
+        c.freelancer_id,
+        COUNT(m.mensaje_id) FILTER (
+          WHERE m.sender_id != $1 AND m.seen = FALSE
+        ) AS no_vistos
       FROM mensajes.chat c
       JOIN autenticacion.usuarios u ON (
         (c.cliente_id = $1 AND u.id = c.freelancer_id)
         OR
         (c.freelancer_id = $1 AND u.id = c.cliente_id)
       )
-      WHERE c.cliente_id = $1 OR c.freelancer_id = $1
+      LEFT JOIN mensajes.mensaje m ON m.chat_id = c.chat_id
+      WHERE $1 IN (c.cliente_id, c.freelancer_id)
+      GROUP BY c.chat_id, u.id, u.name, u.avatar_url, c.cliente_id, c.freelancer_id
+      ORDER BY MAX(m.timestamp) DESC;
     `;
 
     const { rows } = await pool.query(query, [userId]);
-
-    if (rows.length === 0) return res.status(404).json({ error: 'No chats found' });
-
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching chats:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error cargando chats:', error);
+    res.status(500).json({ error: 'Error al cargar chats' });
   }
 });
 
@@ -752,6 +806,129 @@ app.get('/api/buscar', async (req, res) => {
     res.status(500).json({ error: 'Error en la búsqueda' });
   }
 });
+
+// Ruta para crear un nuevo chat
+app.post('/api/chats', async (req, res) => {
+  const { freelancer_id, cliente_id } = req.body;
+
+  if (!freelancer_id || !cliente_id) {
+    return res.status(400).json({ error: 'Faltan parámetros' });
+  }
+
+  try {
+    const insertResult = await pool.query(
+      'INSERT INTO mensajes.chat (freelancer_id, cliente_id) VALUES ($1, $2) RETURNING chat_id',
+      [freelancer_id, cliente_id]
+    );
+    res.status(201).json({ chat_id: insertResult.rows[0].chat_id });
+  } catch (error) {
+    console.error('Error creando chat:', error);
+    res.status(500).json({ error: 'Error creando chat' });
+  }
+});
+
+// Ruta para obtener mensajes de un chat específico
+app.get('/api/chats/:userId/mensajes/:chatId', async (req, res) => {
+  const { userId, chatId } = req.params;
+
+  try {
+    const query = `
+      SELECT m.mensaje_id, m.seen, m.sender_id, m.text, m.timestamp, u.name AS sender_name
+      FROM mensajes.mensaje m
+      JOIN autenticacion.usuarios u ON m.sender_id = u.id
+      WHERE m.chat_id = $1
+      ORDER BY m.timestamp ASC
+    `;
+
+    const { rows } = await pool.query(query, [chatId]);
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+app.get('/api/chats/:userId/mensajes/:chatId', async (req, res) => {
+  const { userId, chatId } = req.params;
+
+  try {
+    const query = `
+      SELECT 
+        m.mensaje_id, 
+        m.sender_id, 
+        m.text, 
+        m.timestamp, 
+        m.seen,
+        u.name AS sender_name
+      FROM mensajes.mensaje m
+      JOIN autenticacion.usuarios u ON m.sender_id = u.id
+      WHERE m.chat_id = $1
+      ORDER BY m.timestamp ASC
+    `;
+
+    const { rows } = await pool.query(query, [chatId]);
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+//Ruta para marcar mensajes como vistos
+app.post('/api/chats/:userId/marcar-vistos/:chatId', async (req, res) => {
+  const { userId, chatId } = req.params;
+
+  try {
+    // Solo marcamos como vistos los mensajes que fueron ENVIADOS por otro usuario (no por el mismo usuario)
+    const updateQuery = `
+      UPDATE mensajes.mensaje
+      SET seen = TRUE
+      WHERE chat_id = $1 AND sender_id != $2 AND seen = FALSE
+    `;
+
+    await pool.query(updateQuery, [chatId, userId]);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marcando mensajes como vistos:', error);
+    res.status(500).json({ error: 'Error al marcar como vistos' });
+  }
+});
+
+// Ruta para enviar un mensaje
+app.post('/api/chats/:emisor_id/mensajes', async (req, res) => {
+  const { emisor_id } = req.params;
+  const { chat_id, texto } = req.body;
+
+  if (!chat_id || !texto) {
+    return res.status(400).json({ error: 'Faltan parámetros' });
+  }
+
+  try {
+    // Verificar que el chat existe
+    const chatResult = await pool.query(
+      'SELECT * FROM mensajes.chat WHERE chat_id = $1',
+      [chat_id]
+    );
+
+    if (chatResult.rowCount === 0) {
+      return res.status(400).json({ error: 'Chat no existe' });
+    }
+
+    // Insertar el mensaje
+    const insertResult = await pool.query(
+      'INSERT INTO mensajes.mensaje (chat_id, sender_id, text) VALUES ($1, $2, $3) RETURNING *',
+      [chat_id, emisor_id, texto]
+    );
+
+    res.status(201).json(insertResult.rows[0]);
+  } catch (error) {
+    console.error('Error enviando mensaje:', error);
+    res.status(500).json({ error: 'Error enviando mensaje' });
+  }
+});
+
 
 
 

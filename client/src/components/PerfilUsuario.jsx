@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "../assets/styles/PerfilPersonal.css";
 import Loader from "./Cargando";
-import BtnEnviar from "./BtnEnviar";
+import {BtnEnviar} from "./BtnEnviar";
 
 function PerfilPublico() {
   const { id } = useParams();

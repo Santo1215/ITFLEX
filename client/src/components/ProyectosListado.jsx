@@ -99,7 +99,7 @@ const ProyectosListado = () => {
               <span>
                 <Link className="usuario" to={ usuarioActual && String(usuarioActual.id) === String(proyectoSeleccionado.client_id)
                   ? "/MiPerfil"
-                  : `/perfil/${proyecto.client_id}`}>{proyectoSeleccionado.nombre_cliente || "Sin nombre"} </Link>
+                  : `/perfil/${proyecto.client_id}`}>{proyecto.nombre_cliente || "Sin nombre"} </Link>
               </span>
               <span className="calificacion">
                 ★ {proyecto.calificacion || "N/A"}

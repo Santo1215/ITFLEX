@@ -103,7 +103,7 @@ export const IrChat = ({ usuarioLogueadoId, usuarioPropuestaId }) => {
 
       if (chatExistente.exists) {
         // Si existe chat, navegar con la URL con IDs concatenados
-        navigate(`/Chats/${usuarioLogueadoId}-${usuarioPropuestaId}`);
+        navigate(`/Chats/${usuarioLogueadoId}`);
       } else {
         // Crear chat nuevo
         const crearResponse = await fetch(`${API_URL}/api/chats`, {
@@ -119,7 +119,7 @@ export const IrChat = ({ usuarioLogueadoId, usuarioPropuestaId }) => {
         if (!crearResponse.ok) throw new Error('Error creando chat');
 
         // Navegar igual al URL con los IDs concatenados
-        navigate(`/Chats/${usuarioLogueadoId}-${usuarioPropuestaId}`);
+        navigate(`/Chats/${usuarioLogueadoId}`);
       }
     } catch (error) {
       console.error(error);
@@ -130,7 +130,7 @@ export const IrChat = ({ usuarioLogueadoId, usuarioPropuestaId }) => {
   return (
     <ChatWrapper>
       <button className="cta" onClick={crearONavegarChat}>
-        <span className="hover-underline-animation"> Ir al chat</span>
+        <span className="hover-underline-animation"> Ir a los chats</span>
         <svg
           id="arrow-horizontal"
           xmlns="http://www.w3.org/2000/svg"
