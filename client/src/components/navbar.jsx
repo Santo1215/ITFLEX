@@ -2,22 +2,127 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../assets/styles/Navbar.css';
 import logo from '../assets/media/logo.png';
 import { Link } from 'react-router-dom';
+import { BotonGuardar,BotonCancelar } from './BotonGuardar';
+import SelectorOpciones from './SelectorOpciones';
+import { ModalPago } from './FormularioPostular';
+
+function ModalBalance({ balance, onClose, onActualizarBalance }) {
+    const [modalPagoOpen, setModalPagoOpen] = useState(false);
+    const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://pruebasitflex.onrender.com';
+
+  const [monto, setMonto] = useState('');
+  const [tipoOperacion, setTipoOperacion] = useState('deposito');
+  const [error, setError] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const handleConfirmarClick = (e) => {
+    e.preventDefault();
+    manejarSubmit(e);
+  };
+
+  const manejarSubmit = async (e) => {
+  e.preventDefault();
+  setError(null);
+
+  const montoNum = parseFloat(monto);
+  if (isNaN(montoNum) || montoNum <= 0) {
+    setError('Ingrese un monto válido mayor que 0');
+    return;
+  }
+
+  setCargando(true);
+
+  try {
+    // Si es retiro, enviamos monto negativo
+    const montoEnviar = tipoOperacion === 'deposito' ? montoNum : -montoNum;
+
+    // Llamada al backend
+    const respuesta = await fetch(`${API_URL}/api/balance/actualizar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ monto: montoEnviar }),
+      credentials: 'include' // si usas cookies para auth
+    });
+
+    if (!respuesta.ok) {
+      const errorData = await respuesta.json();
+      throw new Error(errorData.error || 'Error actualizando balance');
+    }
+
+    const data = await respuesta.json();
+    onActualizarBalance(data.balance); // actualiza balance en frontend con el nuevo valor
+    onClose();
+  } catch (err) {
+    setError(err.message || 'Error al actualizar el balance');
+  } finally {
+    setCargando(false);
+  }
+};
+
+  const opcionesOperacion = [
+    { valor: 'deposito', texto: 'Depositar' },
+    { valor: 'retiro', texto: 'Retirar' }
+  ];
+
+  return (
+    <div className="modal-fondo" style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
+      justifyContent: 'center', alignItems: 'center', zIndex: 9999,
+    }}>
+      <div className="modal-contenido">
+        <h2>Actualizar Balance</h2>
+        <SelectorOpciones opciones={opcionesOperacion} opcionSeleccionada={tipoOperacion} onChange={(valor) => setTipoOperacion(valor)}/>
+        <form onSubmit={manejarSubmit}>
+          <div style={{ marginBottom: '10px' }}>
+            <label>
+              Monto:
+              <input
+                type="number"
+                step="0.01"
+                value={monto}
+                onChange={e => setMonto(e.target.value)}
+                style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                disabled={cargando}
+                min="0.01"
+              />
+            </label>
+          </div>
+          {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <ModalPago/>
+            <BotonCancelar className="pequeno" texto="Cancelar" onClick={onClose} disabled={cargando}/>
+            <BotonGuardar tamaño="pequeño" texto={cargando ? 'Procesando...' : 'Confirmar'} onClick={handleConfirmarClick} disabled={cargando}/>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function Navbar() {
   const [nombreUsuario, setNombreUsuario] = useState('Cargando...');
+  const [balance, setBalance] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [resultados, setResultados] = useState([]);
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [usuarioActual, setUsuarioActual] = useState(null);
+  const debounceTimeout = useRef(null);
+  const [modalBalanceVisible, setModalBalanceVisible] = useState(false);
+  const [tipoOperacion, setTipoOperacion] = useState('deposito');
+  const [cargando, setCargando] = useState(false);
+
   
   const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000'
     : 'https://pruebasitflex.onrender.com';
 
-  // Ref para el debounce
-  const debounceTimeout = useRef(null);
-
+  // Obtener usuario y balance
   useEffect(() => {
     fetch(`${API_URL}/api/user`, {
       method: 'GET',
@@ -41,9 +146,39 @@ function Navbar() {
         setNombreUsuario('Invitado');
       }
       setUsuarioActual(data);
+
+      // Si tenemos user id, obtener balance
+      if (data.id) {
+        fetch(`${API_URL}/api/balance/usuario/${data.id}`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Error al obtener balance');
+          return res.json();
+        })
+        .then(balanceData => {
+          if (balanceData.balance !== undefined) {
+            setBalance(balanceData.balance);
+          } else {
+            setBalance(0);
+          }
+        })
+        .catch(err => {
+          console.error("Error al obtener balance:", err);
+          setBalance(0);
+        });
+      }
     })
-    .catch(() => setNombreUsuario('Invitado'));
-  }, []);
+    .catch(() => {
+      setNombreUsuario('Invitado');
+      setBalance(0);
+    });
+  }, [API_URL]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -149,14 +284,27 @@ function Navbar() {
 </div>
 
       <div className="menu-usuario">
-        <span>
-        <img
-          src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png"
-          alt="perfil"
-          className="icono"
-        />
-        Hola, <span id="nombre-usuario">{nombreUsuario}</span>
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginLeft: '8px' }}>
+          <span>
+            <img
+              src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png"
+              alt="perfil"
+              className="icono"
+              style={{ verticalAlign: 'middle', marginRight: '6px' }}
+            />
+            Hola, <span id="nombre-usuario">{nombreUsuario}</span>
+          </span>
+          {balance !== null && (
+            <span
+              className="balance-usuario"
+              style={{ cursor: 'pointer' }}
+              onClick={() => setModalBalanceVisible(true)}
+              title="Haz clic para actualizar tu balance"
+            >
+              Balance: ${Number(balance).toFixed(2)}
+            </span>
+          )}
+        </div>
         <div className="menu">
           <a href="/MiPerfil">
             <div className="menu-item">Ver perfil</div>
@@ -192,6 +340,11 @@ function Navbar() {
           <div className="text">Salir</div>
         </button>
       </a>
+
+      {modalBalanceVisible && (
+        <ModalBalance balance={balance} onClose={() => setModalBalanceVisible(false)} onActualizarBalance={(nuevoBalance) => setBalance(nuevoBalance)}/>
+      )}
+
     </nav>
   );
 }

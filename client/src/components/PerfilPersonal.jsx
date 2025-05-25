@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "../assets/styles/PerfilPersonal.css";
 import BotonEdición from "./BotonEditar";
-import BotonCancelar from "./BotonCancelar";
-import BotonGuardar from "./BotonGuardar";
+import {BotonGuardar,BotonCancelar} from "./BotonGuardar";
 import SelectorHabilidades from "./SelectorHabilidades";
 import Loader from "./Cargando";
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import '../assets/styles/ProyectosListado.css';
 import Loader from "./Cargando";
-import FormularioPostulacion from './FormularioPostular';
+import {FormularioPostulacion} from './FormularioPostular';
 import { Link } from "react-router-dom";
 import {BotonPostulacion} from "./BotonPostularAbrir";
 
@@ -86,7 +86,7 @@ const ProyectosListado = () => {
   return (
     <div className="proyectos-container">
       <div className="proyectos-listado-izquierdo">
-        {proyectos.map((proyecto) => (
+        {proyectos.filter((proyecto) => proyecto.status === "Abierto").map((proyecto) => (
           <div
             key={proyecto.id}
             className={`proyecto-card ${

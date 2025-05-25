@@ -7,7 +7,7 @@ const GitHubStrategy = require("passport-github2").Strategy;
 require("dotenv").config();
 const pool = require("./src/config/db");
 const path = require("path");
-
+const crypto = require("crypto")
 
 
 const googleCallbackURL = process.env.NODE_ENV === 'production'
@@ -207,16 +207,6 @@ app.get('/api/postulaciones/usuario/:freelancerId', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener postulaciones del usuario' });
-  }
-});
-
-app.get('/test-db', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()'); // Consulta sencilla para probar conexión
-    res.json({ success: true, time: result.rows[0].now });
-  } catch (error) {
-    console.error('Error en test-db:', error);
-    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -593,6 +583,37 @@ app.get("/api/mis-proyectos", (req, res) => {
     });
 });
 
+// Ruta protegida: obtener proyectos donde usuario fue aceptado freelancer
+app.get("/api/mis-trabajos", async (req, res) => {
+  try {
+    const freelancerId = req.user?.id;
+    if (!freelancerId) return res.status(401).json({ error: "No autenticado" });
+
+    const query = `
+      SELECT 
+        p.id,
+        p.title,
+        p.description,
+        p.budget,
+        p.status,
+        p.created_at,
+        u.id AS cliente_id,
+        u.name AS cliente_name
+      FROM proyectos.propuestas po
+      JOIN proyectos.proyectos p ON po.project_id = p.id
+      JOIN autenticacion.usuarios u ON p.client_id = u.id
+      WHERE po.freelancer_id = $1 AND po.status = 'Aceptada'
+      ORDER BY p.created_at DESC;
+    `;
+
+    const result = await pool.query(query, [freelancerId]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener trabajos aceptados:", error);
+    res.status(500).json({ error: "Error al obtener trabajos" });
+  }
+});
+
 app.post('/api/postulaciones', async (req, res) => {
   const { project_id, freelancer_id, proposal_text, proposed_budget, estimated_days } = req.body;
 
@@ -649,28 +670,51 @@ app.get('/api/postulaciones/proyecto/:projectId', async (req, res) => {
   }
 });
 
-// Ruta para aceptar propuesta (actualiza el status)
+// Ruta para aceptar propuesta (actualiza el status de la propuesta y el proyecto, y rechaza las demás)
 app.put('/api/postulaciones/:postulacionId/aceptar', async (req, res) => {
   const { postulacionId } = req.params;
 
   try {
-    const resultado = await pool.query(`
+    // 1. Obtener el project_id de la propuesta que se está aceptando
+    const propuesta = await pool.query(`
+      SELECT project_id FROM proyectos.propuestas WHERE id = $1;
+    `, [postulacionId]);
+
+    if (propuesta.rowCount === 0) {
+      return res.status(404).json({ error: "Propuesta no encontrada" });
+    }
+
+    const projectId = propuesta.rows[0].project_id;
+
+    // 2. Aceptar la propuesta actual
+    const aceptar = await pool.query(`
       UPDATE proyectos.propuestas
       SET status = 'Aceptada'
       WHERE id = $1
       RETURNING *;
     `, [postulacionId]);
 
-    if (resultado.rowCount === 0) {
-      return res.status(404).json({ error: "Propuesta no encontrada" });
-    }
+    // 3. Rechazar todas las demás propuestas del mismo proyecto
+    await pool.query(`
+      UPDATE proyectos.propuestas
+      SET status = 'Rechazada'
+      WHERE project_id = $1 AND id != $2;
+    `, [projectId, postulacionId]);
 
-    res.json({ mensaje: "Propuesta aceptada", propuesta: resultado.rows[0] });
+    // 4. Actualizar el estado del proyecto
+    await pool.query(`
+      UPDATE proyectos.proyectos
+      SET status = 'En desarrollo'
+      WHERE id = $1;
+    `, [projectId]);
+
+    res.json({ mensaje: "Propuesta aceptada y proyecto actualizado", propuesta: aceptar.rows[0] });
   } catch (error) {
     console.error("Error al aceptar propuesta:", error);
     res.status(500).json({ error: "Error al aceptar propuesta" });
   }
 });
+
 
 // Ruta para rechazar propuesta (elimina la propuesta)
 app.delete('/api/postulaciones/:postulacionId/rechazar', async (req, res) => {
@@ -693,6 +737,19 @@ app.delete('/api/postulaciones/:postulacionId/rechazar', async (req, res) => {
     res.status(500).json({ error: "Error al rechazar propuesta" });
   }
 });
+
+// PUT /api/proyectos/:id/finalizar
+app.put('/api/proyectos/:id/finalizar', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query("UPDATE proyectos.proyectos SET status = 'Finalizado' WHERE id = $1", [id]);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.sendStatus(500);
+  }
+});
+
 
 app.post('/api/chats/existing', async (req, res) => {
   const { freelancer_id, cliente_id } = req.body;
@@ -752,21 +809,6 @@ app.get('/api/chats/:userId', async (req, res) => {
     res.status(500).json({ error: 'Error al cargar chats' });
   }
 });
-
-app.post('/api/chats', async (req, res) => {
-  const { freelancer_id, cliente_id } = req.body;
-  try {
-    const insertResult = await pool.query(
-      'INSERT INTO mensajes.chat (freelancer_id, cliente_id) VALUES ($1, $2) RETURNING chat_id',
-      [freelancer_id, cliente_id]
-    );
-    res.json({ chat_id: insertResult.rows[0].chat_id });
-  } catch (error) {
-    console.error('Error creando chat:', error);
-    res.status(500).json({ error: 'Error creando chat' });
-  }
-});
-
 
 app.get('/api/buscar', async (req, res) => {
   const { query } = req.query;
@@ -828,26 +870,6 @@ app.post('/api/chats', async (req, res) => {
 });
 
 // Ruta para obtener mensajes de un chat específico
-app.get('/api/chats/:userId/mensajes/:chatId', async (req, res) => {
-  const { userId, chatId } = req.params;
-
-  try {
-    const query = `
-      SELECT m.mensaje_id, m.seen, m.sender_id, m.text, m.timestamp, u.name AS sender_name
-      FROM mensajes.mensaje m
-      JOIN autenticacion.usuarios u ON m.sender_id = u.id
-      WHERE m.chat_id = $1
-      ORDER BY m.timestamp ASC
-    `;
-
-    const { rows } = await pool.query(query, [chatId]);
-
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 app.get('/api/chats/:userId/mensajes/:chatId', async (req, res) => {
   const { userId, chatId } = req.params;
 
@@ -929,6 +951,60 @@ app.post('/api/chats/:emisor_id/mensajes', async (req, res) => {
   }
 });
 
+// Rutas para el balance
+app.get('/api/balance/usuario/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const result = await pool.query(
+      'SELECT balance FROM transacciones.billeteras WHERE user_id = $1',
+      [userId]
+    );
+
+    const balance = result.rows.length > 0 ? result.rows[0].balance : 0;
+
+    res.json({ balance });
+  } catch (error) {
+    console.error('Error en /api/balance:', error);
+    res.status(500).json({ error: 'Error obteniendo balance' });
+  }
+});
+
+
+app.post('/api/balance/actualizar', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { monto } = req.body;
+
+    if (typeof monto !== 'number' || monto === 0) {
+    return res.status(400).json({ error: 'Monto inválido' });
+    }
+
+    // Intentar actualizar
+    const updateResult = await pool.query(
+      'UPDATE transacciones.billeteras SET balance = balance + $1 WHERE user_id = $2 RETURNING balance;',
+      [monto, userId]
+    );
+
+    let nuevoBalance;
+
+    if (updateResult.rows.length === 0) {
+      // Si no existe, insertamos la billetera
+      const insertResult = await pool.query(
+        'INSERT INTO transacciones.billeteras (user_id, balance) VALUES ($1, $2) RETURNING balance;',
+        [userId, monto]
+      );
+      nuevoBalance = insertResult.rows[0].balance;
+    } else {
+      nuevoBalance = updateResult.rows[0].balance;
+    }
+
+    res.json({ balance: nuevoBalance });
+  } catch (error) {
+    console.error('Error en /api/balance/actualizar:', error);
+    res.status(500).json({ error: 'Error actualizando balance' });
+  }
+});
 
 
 

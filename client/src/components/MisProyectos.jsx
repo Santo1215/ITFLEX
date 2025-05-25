@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import '../assets/styles/ProyectosListado.css';
 import Loader from "./Cargando";
 import "../assets/styles/Postulantes.css";
-import BtnVerPostu from "./BotonVerPostu";
+import { BtnVerPostu }  from "./BotonPostular";
 import { Link } from 'react-router-dom';
-import BotonCancelar from "./BotonCancelar";
-import BotonGuardar from "./BotonGuardar";
+import {BotonGuardar,BotonCancelar} from "./BotonGuardar";
 import { IrChat } from './BotonPostularAbrir';
+import { ModalPago } from "./FormularioPostular";
 
 function tiempoRelativo(fechaString) {
   const fecha = new Date(fechaString);
@@ -30,6 +30,13 @@ const MisProyectosListado = () => {
   const [proyectos, setProyectos] = useState([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
   const [habilidadesExpandida, setHabilidadesExpandida] = useState({});
+  const [modalPagoVisible, setModalPagoVisible] = useState(false);
+  const confirmarPagoYFinalizar = async () => {
+  // Aquí agregas la lógica para finalizar el proyecto (petición al backend, etc.)
+  setModalPagoVisible(false);
+  // Actualizar estados o recargar proyectos si es necesario
+  };
+
   const toggleHabilidades = (postulacionId) => {
   setHabilidadesExpandida((prev) => ({
     ...prev,
@@ -40,6 +47,7 @@ const MisProyectosListado = () => {
   const [postulaciones, setPostulaciones] = useState([]);
   const [mostrarPostulantes, setMostrarPostulantes] = useState(false);
   const [cargandoPostulaciones, setCargandoPostulaciones] = useState(false);
+  const postulacionAceptada = postulaciones.find(p => p.status === "Aceptada") || null;
   const [errorPostulaciones, setErrorPostulaciones] = useState(null);
   const manejarClickPostulantes = () => {
     if (!mostrarPostulantes) {
@@ -64,17 +72,27 @@ const aceptarPropuesta = async (postulacionId) => {
     });
     if (!res.ok) throw new Error("Error al aceptar propuesta");
 
-    // Actualizar estado local para reflejar el cambio
+    // Actualizar postulaciones
     setPostulaciones((prev) =>
       prev.map((p) =>
         p.id === postulacionId ? { ...p, status: "Aceptada" } : p
       )
     );
+
+    // Cambiar el estado del proyecto a "En desarrollo"
+    setProyectos((prev) =>
+      prev.map((p) =>
+        p.id === proyectoSeleccionado.id ? { ...p, status: "En desarrollo" } : p
+      )
+    );
+    setProyectoSeleccionado((prev) => ({ ...prev, status: "En desarrollo" }));
+
   } catch (error) {
     console.error(error);
     alert("No se pudo aceptar la propuesta.");
   }
 };
+
 
 const rechazarPropuesta = async (postulacionId) => {
   try {
@@ -131,11 +149,6 @@ const rechazarPropuesta = async (postulacionId) => {
     setCargandoPostulaciones(true);
     setErrorPostulaciones(null);
 
-    const API_URL =
-      window.location.hostname === "localhost"
-        ? "http://localhost:5000"
-        : "https://pruebasitflex.onrender.com";
-
     try {
       const res = await fetch(`${API_URL}/api/postulaciones/proyecto/${projectId}`, {
         credentials: 'include',
@@ -157,43 +170,68 @@ const rechazarPropuesta = async (postulacionId) => {
   };
 
   const manejarSeleccionProyecto = (proyecto) => {
-    setProyectoSeleccionado(proyecto);
-    setMostrarPostulantes(false);
-    setPostulaciones([]);
-  };
+  setProyectoSeleccionado(proyecto);
+  setMostrarPostulantes(false);
+  setPostulaciones([]);
+
+  if (proyecto.status === "Finalizado") {
+    cargarPostulaciones(proyecto.id);
+  }
+};
 
  if (cargando) return <Loader />;
  if (!cargando && proyectos.length === 0) return <p>No tienes proyectos publicados aún.</p>;
-
+ 
+console.log("Postulación aceptada:", postulacionAceptada);
+console.log("Proyecto finalizado:", proyectoSeleccionado.status);
   return (
     <div className="proyectos-container">
       <div className="proyectos-listado-izquierdo">
-        <h2>Mis Proyectos Publicados</h2>
-        {proyectos.map((proyecto) => (
-          <div
-            key={proyecto.id}
-            className={`proyecto-card ${proyectoSeleccionado?.id === proyecto.id ? "seleccionado" : ""}`}
-            onClick={() => manejarSeleccionProyecto(proyecto)}
-          >
-            <h3>{proyecto.title}</h3>
-            <div className="proyecto-info">
-              <span className="calificacion">
-                ★ {proyecto.calificacion || "N/A"}
-              </span>
-            </div>
-            <div className="proyecto-info">
-              <span>{proyecto.ubicacion || "Ubicación no disponible"}</span>
-              <span className="presupuesto">
-                ${proyecto.budget?.toLocaleString() || 0}
-              </span>
-            </div>
-            <div className="proyecto-tiempo" title={new Date(proyecto.created_at).toLocaleString()}>
-              {tiempoRelativo(proyecto.created_at)}
-            </div>
-          </div>
-        ))}
-      </div>
+        <h2>Mis Proyectos</h2>
+        {proyectos.map((proyecto) => {
+          const estaFinalizado = proyecto.status === "Finalizado";
 
+          return (
+            <div
+              key={proyecto.id}
+              className={`proyecto-card 
+                ${proyectoSeleccionado?.id === proyecto.id ? "seleccionado" : ""} 
+                ${estaFinalizado ? "finalizado" : ""}`}
+              onClick={() => manejarSeleccionProyecto(proyecto)}
+            >
+              <h3>{proyecto.title}</h3>
+              <div className="proyecto-info">
+                <span className="calificacion">
+                  ★ {proyecto.calificacion || "N/A"}
+                </span>
+              </div>
+              <div className="proyecto-info">
+                <span>{proyecto.ubicacion || "Ubicación no disponible"}</span>
+                <span className="presupuesto">
+                  ${proyecto.budget?.toLocaleString() || 0}
+                </span>
+              </div>
+              <div className="proyecto-tiempo" title={new Date(proyecto.created_at).toLocaleString()}>
+                {tiempoRelativo(proyecto.created_at)}
+              </div>
+
+              {/* Mostrar el estado */}
+              <div className="proyecto-estado">
+                Estado: <strong>{proyecto.status || "Desconocido"}</strong>
+              </div>
+
+              {/* Si finalizado, superponer texto */}
+              {estaFinalizado && (
+                <div className="overlay-finalizado">
+                  FINALIZADO
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+      </div>
+<ModalPago isOpen={modalPagoVisible} onClose={() => setModalPagoVisible(false)} onConfirm={confirmarPagoYFinalizar}/> 
       {proyectoSeleccionado && (
         <div className="proyecto-detalle">
           <h2>{proyectoSeleccionado.title}</h2>
@@ -218,12 +256,45 @@ const rechazarPropuesta = async (postulacionId) => {
             <p>{proyectoSeleccionado.description || "Descripción no disponible"}</p>
           </div>
 
-          <BtnVerPostu texto={mostrarPostulantes ? "Ocultar postulantes" : "Ver postulantes"} onClick={manejarClickPostulantes} activo={mostrarPostulantes}/>
+          {proyectoSeleccionado.status !== "Finalizado" && (
+            <BtnVerPostu
+              texto={mostrarPostulantes ? "Ocultar postulantes" : "Ver postulantes"}
+              onClick={manejarClickPostulantes}
+              activo={mostrarPostulantes}
+            />
+          )}
+          {proyectoSeleccionado.status === "Finalizado" && postulacionAceptada ? (
+            <div className="postulacion-card">
+              <h3>Freelancer seleccionado</h3>
+              <p><strong>Freelancer:</strong> <Link className="usuario" to={`/perfil/${postulacionAceptada.freelancer_id}`}>{postulacionAceptada.freelancer_name || "Nombre no disponible"}</Link></p>
+              <div className="habilidades-linea">
+                <strong>Habilidades:</strong>
+                <div className="roles-con-colapsar">
+                  {postulacionAceptada.habilidades.map((hab, index) => (
+                    <div className="role" key={index}>{hab}</div>
+                  ))}
+                </div>
+              </div>
+              <p><strong>Presupuesto propuesto:</strong> ${postulacionAceptada.proposed_budget?.toLocaleString()}</p>
+              <p><strong>Días estimados:</strong> {postulacionAceptada.estimated_days}</p>
+            </div>
+          ) : proyectoSeleccionado.status === "Finalizado" ? (
+            <p>No fue aceptada ninguna propuesta para este proyecto.</p>
+          ) : null}
 
+
+          {proyectoSeleccionado.status === "En desarrollo" && (
+          <div style={{ marginTop: '1rem' }}>
+            <BotonGuardar
+              texto="Finalizar proyecto"
+              onClick={() => setModalPagoVisible(true)}
+            />
+          </div>
+        )}
           {cargandoPostulaciones && <p>Cargando postulantes...</p>}
           {errorPostulaciones && <p style={{ color: 'red' }}>{errorPostulaciones}</p>}
 
-          {mostrarPostulantes && (
+          {mostrarPostulantes && proyectoSeleccionado.status !=="Finalizado" &&(
             <div className="postulaciones-listado">
               <h3>Propuestas de Postulantes</h3>
               {postulaciones.length === 0 ? (
@@ -231,7 +302,7 @@ const rechazarPropuesta = async (postulacionId) => {
               ) : (
                 postulaciones.map((postulacion) => (
                   <div key={postulacion.id} className="postulacion-card">
-                    <p><strong>Freelancer:</strong> <Link  class="usuario" to={`/perfil/${postulacion.freelancer_id}`}> {postulacion.freelancer_name || "Nombre no disponible"}</Link></p>
+                    <p><strong>Freelancer:</strong> <Link  className="usuario" to={`/perfil/${postulacion.freelancer_id}`}> {postulacion.freelancer_name || "Nombre no disponible"}</Link></p>
                     
                     {/* Mostrar habilidades */}
                     <div className="habilidades-linea">

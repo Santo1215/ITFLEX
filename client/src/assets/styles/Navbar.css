@@ -356,3 +356,21 @@
   font-size: 13px;
   margin-top: 2px;
 }
+
+.balance-usuario {
+  font-size: 0.85rem; /* Tamaño un poco más pequeño */
+  color: #555; /* Color gris para que no destaque demasiado */
+  margin-top: 2px;
+  font-weight: 500; /* Puedes ajustar */
+}
+
+.modal-contenido {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

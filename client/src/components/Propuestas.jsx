@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import '../assets/styles/ProyectosListado.css';
 import Loader from "./Cargando";
 import { Link } from 'react-router-dom';
-import BotonCancelar from "./BotonCancelar";
-import BotonGuardar from "./BotonGuardar";
+import {BotonGuardar,BotonCancelar} from "./BotonGuardar";
 import { IrChat } from './BotonPostularAbrir';
 
 function tiempoRelativo(fechaString) {

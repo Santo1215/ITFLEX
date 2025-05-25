@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "../assets/styles//CrearProyecto.css";
-import BotonCancelar from "./BotonCancelar";
+import {BotonCancelar} from "./BotonGuardar";
 
 export default function CrearProyecto({ onProyectoCreado }) {
   const [title, setTitle] = useState("");
