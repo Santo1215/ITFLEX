@@ -11,13 +11,13 @@ const crypto = require("crypto")
 
 
 const googleCallbackURL = process.env.NODE_ENV === 'production'
-  ? 'https://pruebasitflex.onrender.com/auth/google/callback'
+  ? 'https://itflex.onrender.com/auth/google/callback'
   : 'http://localhost:5000/auth/google/callback';
 
 let FRONTEND_URL = '';  // define fuera para usar luego
 
-if (googleCallbackURL === "https://pruebasitflex.onrender.com/auth/google/callback") {
-  FRONTEND_URL = 'https://pruebasitflex.onrender.com';
+if (googleCallbackURL === "https://itflex.onrender.com/auth/google/callback") {
+  FRONTEND_URL = 'https://itflex.onrender.com';
 } else if (googleCallbackURL === "http://localhost:5000/auth/google/callback") {
   FRONTEND_URL = 'http://localhost:3000';
 } else if (googleCallbackURL === "https://itflex.onrender.com/auth/google/callback") {
