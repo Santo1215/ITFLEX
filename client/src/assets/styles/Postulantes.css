@@ -1,0 +1,94 @@
+.postulaciones-listado {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 0 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+.postulaciones-listado h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #222;
+  font-weight: 700;
+  font-size: 1.8rem;
+}
+
+.postulacion-card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+}
+
+.postulacion-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.postulacion-card p {
+  margin: 8px 0;
+  line-height: 1.4;
+  font-size: 1rem;
+}
+
+.postulacion-card strong {
+  color: #0056b3;
+}
+
+.postulacion-card p strong {
+  display: inline-block;
+  width: 140px; /* ancho fijo para alinear etiquetas */
+}
+
+.postulacion-card p:last-child {
+  margin-bottom: 0;
+}
+
+.habilidades-linea {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+
+.roles-con-colapsar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+.role {
+  background: #e2e8f0;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.ver-mas-btn {
+  background: transparent;
+  border: none;
+  color: #3182ce;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.roles-con-colapsar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 100%;
+  align-items: center;
+}
+
+.ver-mas-wrapper {
+  display: flex;
+  align-items: center;
+}
