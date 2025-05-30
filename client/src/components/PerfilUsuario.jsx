@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import "../assets/styles/PerfilPersonal.css";
 import Loader from "./Cargando";
 import {BtnEnviar} from "./BtnEnviar";
+import { API_URL } from '../constants';
 
 function PerfilPublico() {
   const { id } = useParams();
@@ -26,11 +27,6 @@ function PerfilPublico() {
   const [proyectosCliente, setProyectosCliente] = useState([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState("");
   const [invitacionEnviada, setInvitacionEnviada] = useState(false);
-  const API_URL =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000"
-      : "https://pruebasitflex.onrender.com";
-
   const DEFAULT_PROFILE_IMAGE =
     "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
 

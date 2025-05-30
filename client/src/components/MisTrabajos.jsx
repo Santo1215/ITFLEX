@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Loader from "./Cargando";
 import "../assets/styles/ProyectosListado.css";
 import { Link } from 'react-router-dom';
+import { API_URL } from '../constants';
 
 function tiempoRelativo(fechaString) {
   const fecha = new Date(fechaString);
@@ -21,11 +22,6 @@ const MisTrabajos = () => {
   const [trabajos, setTrabajos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [trabajoSeleccionado, setTrabajoSeleccionado] = useState(null);
-
-  const API_URL =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000"
-      : "https://pruebasitflex.onrender.com";
 
   useEffect(() => {
     fetch(`${API_URL}/api/mis-trabajos`, {

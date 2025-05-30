@@ -2,65 +2,52 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../assets/styles/Navbar.css';
 import logo from '../assets/media/logo.png';
 import { Link } from 'react-router-dom';
-import { BotonGuardar,BotonCancelar } from './BotonGuardar';
+import { BotonGuardar, BotonCancelar } from './BotonGuardar';
 import SelectorOpciones from './SelectorOpciones';
-import { ModalPago } from './FormularioPostular';
+import { useBalance } from '../context/BalanceContext';
+import { API_URL } from '../constants';
 
-function ModalBalance({ balance, onClose, onActualizarBalance }) {
-    const [modalPagoOpen, setModalPagoOpen] = useState(false);
-    const API_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000'
-    : 'https://pruebasitflex.onrender.com';
-
+function ModalBalance({ balanceUsuario, setBalanceUsuario, onClose }) {
   const [monto, setMonto] = useState('');
   const [tipoOperacion, setTipoOperacion] = useState('deposito');
   const [error, setError] = useState(null);
   const [cargando, setCargando] = useState(false);
-  const handleConfirmarClick = (e) => {
-    e.preventDefault();
-    manejarSubmit(e);
-  };
 
   const manejarSubmit = async (e) => {
-  e.preventDefault();
-  setError(null);
+    e.preventDefault();
+    setError(null);
 
-  const montoNum = parseFloat(monto);
-  if (isNaN(montoNum) || montoNum <= 0) {
-    setError('Ingrese un monto válido mayor que 0');
-    return;
-  }
-
-  setCargando(true);
-
-  try {
-    // Si es retiro, enviamos monto negativo
-    const montoEnviar = tipoOperacion === 'deposito' ? montoNum : -montoNum;
-
-    // Llamada al backend
-    const respuesta = await fetch(`${API_URL}/api/balance/actualizar`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ monto: montoEnviar }),
-      credentials: 'include' // si usas cookies para auth
-    });
-
-    if (!respuesta.ok) {
-      const errorData = await respuesta.json();
-      throw new Error(errorData.error || 'Error actualizando balance');
+    const montoNum = parseFloat(monto);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      setError('Ingrese un monto válido mayor que 0');
+      return;
     }
 
-    const data = await respuesta.json();
-    onActualizarBalance(data.balance); // actualiza balance en frontend con el nuevo valor
-    onClose();
-  } catch (err) {
-    setError(err.message || 'Error al actualizar el balance');
-  } finally {
-    setCargando(false);
-  }
-};
+    setCargando(true);
+
+    try {
+      const montoEnviar = tipoOperacion === 'deposito' ? montoNum : -montoNum;
+      const res = await fetch(`${API_URL}/api/balance/actualizar`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ monto: montoEnviar }),
+      });
+
+      if (!res.ok) throw new Error('Error al actualizar el balance en el servidor');
+
+  const data = await res.json();
+      setBalanceUsuario(prev => parseFloat(prev) + montoEnviar);
+
+      onClose(); // cerrar modal al terminar
+    } catch (err) {
+      setError(err.message || 'Error al actualizar el balance');
+    } finally {
+      setCargando(false);
+    }
+  };
 
   const opcionesOperacion = [
     { valor: 'deposito', texto: 'Depositar' },
@@ -75,7 +62,11 @@ function ModalBalance({ balance, onClose, onActualizarBalance }) {
     }}>
       <div className="modal-contenido">
         <h2>Actualizar Balance</h2>
-        <SelectorOpciones opciones={opcionesOperacion} opcionSeleccionada={tipoOperacion} onChange={(valor) => setTipoOperacion(valor)}/>
+        <SelectorOpciones
+          opciones={opcionesOperacion}
+          opcionSeleccionada={tipoOperacion}
+          onChange={setTipoOperacion}
+        />
         <form onSubmit={manejarSubmit}>
           <div style={{ marginBottom: '10px' }}>
             <label>
@@ -92,11 +83,9 @@ function ModalBalance({ balance, onClose, onActualizarBalance }) {
             </label>
           </div>
           {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
-
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <ModalPago/>
-            <BotonCancelar className="pequeno" texto="Cancelar" onClick={onClose} disabled={cargando}/>
-            <BotonGuardar tamaño="pequeño" texto={cargando ? 'Procesando...' : 'Confirmar'} onClick={handleConfirmarClick} disabled={cargando}/>
+            <BotonCancelar className="pequeno" texto="Cancelar" onClick={onClose} disabled={cargando} />
+            <BotonGuardar tamaño="pequeño" texto={cargando ? 'Procesando...' : 'Confirmar'} type="submit" disabled={cargando} />
           </div>
         </form>
       </div>
@@ -106,79 +95,48 @@ function ModalBalance({ balance, onClose, onActualizarBalance }) {
 
 function Navbar() {
   const [nombreUsuario, setNombreUsuario] = useState('Cargando...');
-  const [balance, setBalance] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [resultados, setResultados] = useState([]);
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [usuarioActual, setUsuarioActual] = useState(null);
-  const debounceTimeout = useRef(null);
   const [modalBalanceVisible, setModalBalanceVisible] = useState(false);
-  const [tipoOperacion, setTipoOperacion] = useState('deposito');
-  const [cargando, setCargando] = useState(false);
+  const debounceTimeout = useRef(null);
+  const { balanceUsuario, setBalanceUsuario } = useBalance();
 
-  
-  const API_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000'
-    : 'https://pruebasitflex.onrender.com';
-
-  // Obtener usuario y balance
   useEffect(() => {
-    fetch(`${API_URL}/api/user`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      }
-    })
-    .then(response => {
-      if (!response.ok) throw new Error('Error en la respuesta del servidor');
-      return response.json();
-    })
-    .then(data => {
-      if (data.name) {
-        const primerNombre = data.name.split(' ')[0];
-        const nombreFormateado = 
-          primerNombre.charAt(0).toUpperCase() + primerNombre.slice(1).toLowerCase();
-        setNombreUsuario(nombreFormateado);
-      } else {
-        setNombreUsuario('Invitado');
-      }
-      setUsuarioActual(data);
-
-      // Si tenemos user id, obtener balance
-      if (data.id) {
-        fetch(`${API_URL}/api/balance/usuario/${data.id}`, {
+    const obtenerUsuario = async () => {
+      try {
+        const resUsuario = await fetch(`${API_URL}/api/user`, {
           method: 'GET',
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           }
-        })
-        .then(res => {
-          if (!res.ok) throw new Error('Error al obtener balance');
-          return res.json();
-        })
-        .then(balanceData => {
-          if (balanceData.balance !== undefined) {
-            setBalance(balanceData.balance);
-          } else {
-            setBalance(0);
-          }
-        })
-        .catch(err => {
-          console.error("Error al obtener balance:", err);
-          setBalance(0);
         });
+
+        if (!resUsuario.ok) throw new Error('Error al obtener usuario');
+
+        const dataUsuario = await resUsuario.json();
+        if (dataUsuario.name) {
+          const primerNombre = dataUsuario.name.split(' ')[0];
+          const nombreFormateado = primerNombre.charAt(0).toUpperCase() + primerNombre.slice(1).toLowerCase();
+          setNombreUsuario(nombreFormateado);
+        } else {
+          setNombreUsuario('Invitado');
+        }
+
+        setUsuarioActual(dataUsuario);
+      } catch (err) {
+        console.error('Error en carga inicial:', err);
+        setNombreUsuario('Invitado');
+        setBalanceUsuario(0);
       }
-    })
-    .catch(() => {
-      setNombreUsuario('Invitado');
-      setBalance(0);
-    });
-  }, [API_URL]);
+    };
+
+    obtenerUsuario();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -192,21 +150,13 @@ function Navbar() {
 
   const toggleMenu = () => setMenuVisible(prev => !prev);
 
-  // Nueva función que hace la búsqueda con debounce
   const handleChangeBusqueda = (e) => {
     const valor = e.target.value;
     setBusqueda(valor);
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
 
-    // Si hay un timeout pendiente, lo limpiamos
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-
-    // Solo buscamos si hay texto (evita búsquedas vacías)
     if (valor.trim().length > 0) {
-      debounceTimeout.current = setTimeout(() => {
-        hacerBusqueda(valor);
-      }, 300); // 300 ms de espera antes de buscar
+      debounceTimeout.current = setTimeout(() => hacerBusqueda(valor), 300);
     } else {
       setResultados([]);
       setMostrarDropdown(false);
@@ -218,7 +168,6 @@ function Navbar() {
       const response = await fetch(`${API_URL}/api/buscar?query=${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Error en la búsqueda');
       const data = await response.json();
-
       setResultados(data);
       setMostrarDropdown(true);
     } catch (error) {
@@ -228,7 +177,6 @@ function Navbar() {
     }
   };
 
-  // Función para buscar al presionar Enter o al hacer click (opcional)
   const handleBuscar = () => {
     if (busqueda.trim().length > 0) {
       hacerBusqueda(busqueda);
@@ -237,9 +185,7 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <a href="/Home" className="logo">
-        <img src={logo} alt="ITFLEX" />
-      </a>
+      <a href="/Home" className="logo"><img src={logo} alt="ITFLEX" /></a>
 
       <div className="search-bar">
         <input
@@ -250,29 +196,21 @@ function Navbar() {
           onKeyDown={(e) => e.key === 'Enter' && handleBuscar()}
         />
         <button onClick={handleBuscar}>
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/622/622669.png"
-            alt="buscar"
-            className="icono"
-          />
+          <img src="https://cdn-icons-png.flaticon.com/512/622/622669.png" alt="buscar" className="icono" />
         </button>
-
         {mostrarDropdown && resultados.length > 0 && (
           <div className="dropdown-resultados">
             {resultados.map((item, index) => (
               <div key={index} className="dropdown-item">
                 <strong>{item.tipo.toUpperCase()}</strong>:{' '}
-                {item.tipo === 'usuario' ? (<Link className="usuario" to={ 
-                  usuarioActual && String(usuarioActual.id) === String(item.id)? "/MiPerfil": `/perfil/${item.id}`}>
-                  {item.nombre}</Link>) : (item.nombre)}
-
-
-                {item.tipo === 'usuario' && item.habilidades && item.habilidades.length > 0 && (
-                  <div className="extra-info">
-                    Habilidades: {item.habilidades}
-                  </div>
+                {item.tipo === 'usuario' ? (
+                  <Link className="usuario" to={usuarioActual && String(usuarioActual.id) === String(item.id) ? "/MiPerfil" : `/perfil/${item.id}`}>
+                    {item.nombre}
+                  </Link>
+                ) : (item.nombre)}
+                {item.tipo === 'usuario' && item.habilidades && (
+                  <div className="extra-info">Habilidades: {item.habilidades}</div>
                 )}
-
                 {item.extra_info && item.tipo !== 'usuario' && (
                   <div className="extra-info">{item.extra_info}</div>
                 )}
@@ -280,55 +218,40 @@ function Navbar() {
             ))}
           </div>
         )}
-
-</div>
+      </div>
 
       <div className="menu-usuario">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginLeft: '8px' }}>
           <span>
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png"
-              alt="perfil"
-              className="icono"
-              style={{ verticalAlign: 'middle', marginRight: '6px' }}
-            />
+            <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="perfil" className="icono" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
             Hola, <span id="nombre-usuario">{nombreUsuario}</span>
           </span>
-          {balance !== null && (
+          {balanceUsuario !== null && (
             <span
               className="balance-usuario"
               style={{ cursor: 'pointer' }}
               onClick={() => setModalBalanceVisible(true)}
               title="Haz clic para actualizar tu balance"
             >
-              Balance: ${Number(balance).toFixed(2)}
+              Balance: ${balanceUsuario}
             </span>
           )}
         </div>
         <div className="menu">
-          <a href="/MiPerfil">
-            <div className="menu-item">Ver perfil</div>
-          </a>
-          <a href="/VerPropuestas">
-            <div className="menu-item">Ver propuestas</div>
-          </a>
-          <a href="/MisProyectos">
-            <div className="menu-item">Mis proyectos</div>
-          </a>
+          <a href="/MiPerfil"><div className="menu-item">Ver perfil</div></a>
+          <a href="/VerPropuestas"><div className="menu-item">Ver propuestas</div></a>
+          <a href="/MisProyectos"><div className="menu-item">Mis proyectos</div></a>
           {usuarioActual && usuarioActual.id ? (
-              <Link to={`/Chats/${usuarioActual.id}`}>
-                <div className="menu-item">Chats</div>
-              </Link>
-            ) : (
-              <div className="menu-item">Chats</div>
-            )}
+            <Link to={`/Chats/${usuarioActual.id}`}><div className="menu-item">Chats</div></Link>
+          ) : (
+            <div className="menu-item">Chats</div>
+          )}
         </div>
       </div>
 
-      <a href='/Publicar'> <button className="btn-publicar">
-        Publicar un proyecto
-      </button></a>
-      
+      <a href='/Publicar'>
+        <button className="btn-publicar">Publicar un proyecto</button>
+      </a>
 
       <a href="/">
         <button className="Btn-cerrarsesion">
@@ -342,9 +265,12 @@ function Navbar() {
       </a>
 
       {modalBalanceVisible && (
-        <ModalBalance balance={balance} onClose={() => setModalBalanceVisible(false)} onActualizarBalance={(nuevoBalance) => setBalance(nuevoBalance)}/>
+        <ModalBalance
+          balanceUsuario={balanceUsuario}
+          setBalanceUsuario={setBalanceUsuario}
+          onClose={() => setModalBalanceVisible(false)}
+        />
       )}
-
     </nav>
   );
 }

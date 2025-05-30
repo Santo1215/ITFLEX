@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { API_URL } from '../constants';
 
 export const BotonPostulacion = ({
   proyecto,
@@ -15,10 +16,6 @@ export const BotonPostulacion = ({
 
   const handleClick = async () => {
     try {
-      const API_URL =
-        window.location.hostname === "localhost"
-          ? "http://localhost:5000"
-          : "https://pruebasitflex.onrender.com";
 
       const response = await fetch(`${API_URL}/api/postulaciones`, {
         method: "POST",

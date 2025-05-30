@@ -11,11 +11,11 @@ function App() {
 
     return (
         <Router>
-        <AppRoutes
-            activeModal={activeModal}
-            onOpenModal={openModal}
-            onCloseModal={closeModal}
-        />
+            <AppRoutes
+                activeModal={activeModal}
+                onOpenModal={openModal}
+                onCloseModal={closeModal}
+            />
         </Router>
     );
 }

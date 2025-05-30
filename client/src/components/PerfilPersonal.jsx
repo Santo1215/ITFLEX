@@ -4,6 +4,7 @@ import BotonEdición from "./BotonEditar";
 import {BotonGuardar,BotonCancelar} from "./BotonGuardar";
 import SelectorHabilidades from "./SelectorHabilidades";
 import Loader from "./Cargando";
+import { API_URL } from '../constants';
 
 function PerfilPersonal() {
   const [listaHabilidades, setListaHabilidades] = useState([]);
@@ -90,12 +91,6 @@ const handleEnlaceChange = (index, value) => {
     },
   }));
 };
-
-  const API_URL =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000"
-      : "https://pruebasitflex.onrender.com";
-
  const cargarPerfil = async () => {
   try {
     const res = await fetch(`${API_URL}/api/perfil`, {

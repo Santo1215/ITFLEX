@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { BotonPostulacion} from './BotonPostular';
+import { API_URL, getUserId } from '../constants';
 
 export const FormularioPostulacion = ({ proyecto, usuarioActual, postulados, setPostulados, onClose }) => {
-  const [presupuesto, setPresupuesto] = useState("");
   const [dias, setDias] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const presupuestoMaximo = proyecto.budget * 2;
@@ -178,39 +178,66 @@ const StyledWrapper = styled.div`
   }
 `;
 
-// Componente ModalPago para realizar pagos
 export const ModalPago = ({ isOpen, onClose, onPagoRealizado, projectId, receiverId }) => {
   const [monto, setMonto] = useState('');
+  const [comentario, setComentario] = useState('');
+  const [rating, setRating] = useState(0);
+  const userId = getUserId();
+  
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const resFreelancer = await fetch(`${API_URL}/api/proyectos/${userId}/freelancer`);
+    const dataFreelancer = await resFreelancer.json();
+    const receiverId = dataFreelancer.freelancer_id;
+
+    // Validar que el monto sea un número positivo
+    const montoNum = parseFloat(monto);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      alert('Por favor ingresa un monto válido mayor a 0');
+      return;
+    }
 
     try {
-      const response = await fetch('/api/pagos/realizar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, receiverId, amount: parseFloat(monto) }),
+      const response = await fetch(`${API_URL}/api/proyectos/${projectId}/finalizar`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ monto: montoNum, receiverId }),
       });
 
-      const data = await response.json();
+      if (!response.ok) throw new Error('Error al procesar el pago');
+      
+        const resReseña = await fetch(`${API_URL}/api/resenas` , {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            
+            reviewer_id: userId,
+            reviewed_id: receiverId,
+            project_id: projectId,
+            rating,
+            comment: comentario
+          })
+        });
+        
+        if (!resReseña.ok) throw new Error('Error al registrar la reseña');
 
-      if (response.ok) {
-        onPagoRealizado(data);
-        onClose();
-      } else {
-        alert(data.error || 'Error haciendo pago');
+        alert('Pago y reseña realizados exitosamente');
+        onPagoRealizado(projectId, montoNum, receiverId);
+        onClose(); // Cierra el modal
+      } catch (err) {
+        console.error(err);
+        alert('Ocurrió un error: ' + err.message);
       }
-    } catch (error) {
-      alert('Error en la solicitud de pago');
-      console.error(error);
-    }
-  };
+    };
 
   return (
     <StyledModalWrapper>
-       <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" onClick={onClose}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal__header">
             <span className="modal__title">Realizar Pago</span>
@@ -234,6 +261,35 @@ export const ModalPago = ({ isOpen, onClose, onPagoRealizado, projectId, receive
                 onChange={(e) => setMonto(e.target.value)}
                 required
               />
+            </div>
+            <div className="input">
+              <label className="input__label">Reseña</label>
+              <textarea
+                className="input__field"
+                placeholder="Escribe una reseña sobre el freelancer..."
+                value={comentario}
+                onChange={(e) => setComentario(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="input">
+              <label className="input__label">Calificación</label>
+              <div className="star-rating">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    onClick={() => setRating(star)}
+                    style={{
+                      cursor: 'pointer',
+                      color: star <= rating ? '#ffc107' : '#e4e5e9',
+                      fontSize: '1.5rem'
+                    }}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
             </div>
             <div className="modal__footer">
               <button className="button button--primary" type="submit">

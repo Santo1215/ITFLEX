@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from '../constants';
 
 // Botón postulación
 export const BotonPostulacion = ({ onClick, disabled, texto }) => {
@@ -77,10 +78,6 @@ const PostulacionWrapper = styled.div`
     transform: scale(0.97);
   }
 `;
-
-const API_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:5000'
-  : 'https://pruebasitflex.onrender.com';
 
 export const IrChat = ({ usuarioLogueadoId, usuarioPropuestaId }) => {
   const navigate = useNavigate();

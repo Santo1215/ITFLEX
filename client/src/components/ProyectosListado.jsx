@@ -4,6 +4,7 @@ import Loader from "./Cargando";
 import {FormularioPostulacion} from './FormularioPostular';
 import { Link } from "react-router-dom";
 import {BotonPostulacion} from "./BotonPostularAbrir";
+import { API_URL} from '../constants';
 
 // Función para mostrar "Hace X tiempo"
 function tiempoRelativo(fechaString) {
@@ -28,16 +29,33 @@ const ProyectosListado = () => {
   const [usuarioActual, setUsuarioActual] = useState(null);
   const [proyectosPostulados, setProyectosPostulados] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [comentarios, setComentarios] = useState([]);
+  const [calificacionPromedio, setCalificacionPromedio] = useState(null);
   const estaPostulado = proyectoSeleccionado
     ? proyectosPostulados.includes(proyectoSeleccionado.id)
     : false;
+useEffect(() => {
+  if (!proyectoSeleccionado?.client_id) return;
+  const clientId = proyectoSeleccionado?.client_id;
+  console.log("Ejecutando fetch de reseñas para client_id:", clientId);
+  fetch(`${API_URL}/api/resenas/usuario/${proyectoSeleccionado.client_id}`, { credentials: "include" })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Reseñas del usuario:", data);
+      if (!data || !data.resenas) {
+        setComentarios([]);
+        setCalificacionPromedio(0);
+        return;
+      }
+      setComentarios(data.resenas);
+      setCalificacionPromedio(data.calificacion_promedio || 0);
+    })
+    .catch(err => {
+      console.error("Error al cargar reseñas:", err);
+    });
+}, [proyectoSeleccionado?.client_id]);
 
   useEffect(() => {
-    const API_URL =
-      window.location.hostname === "localhost"
-        ? "http://localhost:5000"
-        : "https://pruebasitflex.onrender.com";
-
     // Obtener usuario actual
     fetch(`${API_URL}/api/user`, { credentials: "include" })
       .then((res) => res.json())
@@ -46,6 +64,8 @@ const ProyectosListado = () => {
 
         // Obtener postulaciones del usuario
         if (data && data.id) {
+          localStorage.setItem('userId', data.id);
+          
           fetch(`${API_URL}/api/postulaciones/usuario/${data.id}`, { credentials: "include" })
             .then((res) => res.json())
             .then((postulaciones) => {
@@ -102,7 +122,7 @@ const ProyectosListado = () => {
                   : `/perfil/${proyecto.client_id}`}>{proyecto.nombre_cliente || "Sin nombre"} </Link>
               </span>
               <span className="calificacion">
-                ★ {proyecto.calificacion || "N/A"}
+                ★ {Number(proyecto.calificacion_promedio)?.toFixed(1) || "N/A"}
               </span>
             </div>
             <div className="proyecto-info">
@@ -134,8 +154,8 @@ const ProyectosListado = () => {
 
               </span>
               <span className="calificacion">
-                ★ {proyectoSeleccionado.calificacion || "N/A"}
-              </span>
+              ★ {calificacionPromedio !== null ? calificacionPromedio.toFixed(1) : "N/A"}
+            </span>
             </div>
             <div>
               <span>{proyectoSeleccionado.ubicacion || "Ubicación no disponible"}</span>
@@ -177,16 +197,16 @@ const ProyectosListado = () => {
             />
           )}
 
-          {proyectoSeleccionado.comentarios && (
+          {comentarios.length > 0 && (
             <div className="comentarios-section">
               <h3>Comentarios</h3>
-              {proyectoSeleccionado.comentarios.map((comentario, index) => (
+              {comentarios.map((comentario, index) => (
                 <div key={index} className="comentario">
                   <div className="comentario-header">
-                    <strong>{comentario.nombre}</strong>
-                    <span className="calificacion">★ {comentario.calificacion}</span>
+                    <strong>{comentario.nombre_reviewer}</strong>
+                    <span className="calificacion">★ {comentario.rating}</span>
                   </div>
-                  <p>{comentario.texto}</p>
+                  <p>{comentario.comment}</p>
                 </div>
               ))}
             </div>

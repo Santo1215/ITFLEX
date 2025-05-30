@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "../assets/styles//CrearProyecto.css";
 import {BotonCancelar} from "./BotonGuardar";
+import { API_URL,getUserId } from '../constants';
 
 export default function CrearProyecto({ onProyectoCreado }) {
   const [title, setTitle] = useState("");
@@ -8,12 +9,7 @@ export default function CrearProyecto({ onProyectoCreado }) {
   const [budget, setBudget] = useState("");
   const [formattedBudget, setFormattedBudget] = useState("");
   const [deadline, setDeadline] = useState("");
- 
-  const API_URL = process.env.NODE_ENV === 'production'
-  ? 'https://pruebasitflex.onrender.com'
-  : 'http://localhost:5000';
-
-
+  const userId = getUserId();
   // Función para formatear el valor como moneda
   const formatCurrency = (value) => {
     if (!value) return "";
@@ -54,12 +50,14 @@ export default function CrearProyecto({ onProyectoCreado }) {
       description,
       budget: parseFloat(budget),
       deadline,
+      usuario_id: parseInt(userId)
     };
 
     try {
       const response = await fetch(`${API_URL}/api/proyectos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(nuevoProyecto),
       });
 

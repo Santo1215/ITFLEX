@@ -14,8 +14,6 @@ const googleCallbackURL = process.env.NODE_ENV === 'production'
   ? 'https://pruebasitflex.onrender.com/auth/google/callback'
   : 'http://localhost:5000/auth/google/callback';
 
-
-console.log('Usando GOOGLE_CALLBACK_URL:', googleCallbackURL);
 let FRONTEND_URL = '';  // define fuera para usar luego
 
 if (googleCallbackURL === "https://pruebasitflex.onrender.com/auth/google/callback") {
@@ -28,7 +26,6 @@ if (googleCallbackURL === "https://pruebasitflex.onrender.com/auth/google/callba
   FRONTEND_URL = 'http://localhost:3000'; // fallback por si no coincide nada
 }
 
-console.log('Usando FRONTEND_URL:', FRONTEND_URL);
 const app = express();
 
 // Middleware
@@ -164,9 +161,16 @@ app.get("/api/proyectos", async (req, res) => {
   const freelancerId = req.user?.id;
 
   try {
-    // Traer todos los proyectos con info del cliente
+    // Traer todos los proyectos con info del cliente + calificación promedio del cliente
     const proyectosResult = await pool.query(`
-      SELECT p.*, u.name AS nombre_cliente
+      SELECT 
+        p.*, 
+        u.name AS nombre_cliente,
+        COALESCE(ROUND((
+          SELECT AVG(r.rating)::numeric
+          FROM reseñas.reseñas r
+          WHERE r.reviewed_id = p.client_id
+        ), 1)::float, 0) AS calificacion_promedio
       FROM proyectos.proyectos p
       JOIN autenticacion.usuarios u ON p.client_id = u.id
       ORDER BY p.created_at DESC
@@ -175,7 +179,6 @@ app.get("/api/proyectos", async (req, res) => {
     let idsPostulados = [];
 
     if (freelancerId) {
-      // Buscar proyectos en los que el freelancer ya se postuló
       const postulacionesResult = await pool.query(
         `SELECT project_id FROM proyectos.propuestas WHERE freelancer_id = $1`,
         [freelancerId]
@@ -195,6 +198,7 @@ app.get("/api/proyectos", async (req, res) => {
     res.status(500).json({ error: "Error al obtener proyectos" });
   }
 });
+
 
 app.get('/api/postulaciones/usuario/:freelancerId', async (req, res) => {
   try {
@@ -738,15 +742,78 @@ app.delete('/api/postulaciones/:postulacionId/rechazar', async (req, res) => {
   }
 });
 
-// PUT /api/proyectos/:id/finalizar
 app.put('/api/proyectos/:id/finalizar', async (req, res) => {
   const { id } = req.params;
+  const { monto } = req.body;
+
   try {
-    await pool.query("UPDATE proyectos.proyectos SET status = 'Finalizado' WHERE id = $1", [id]);
-    res.sendStatus(200);
+    const result = await pool.query(`
+      SELECT 
+        p.client_id, 
+        p.budget, 
+        pr.freelancer_id
+      FROM proyectos.proyectos p
+      JOIN proyectos.propuestas pr ON pr.project_id = p.id
+      WHERE p.id = $1 AND pr.status = 'Aceptada'
+      LIMIT 1
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No se encontró el proyecto o no hay freelancer aceptado.' });
+    }
+
+    const { client_id, budget, freelancer_id } = result.rows[0];
+    const amount = monto ? parseFloat(monto) : budget;
+
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Monto inválido' });
+    }
+
+    await pool.query('BEGIN');
+
+    await pool.query(`
+      INSERT INTO transacciones.billeteras (user_id, balance)
+      VALUES ($1, 0.00)
+      ON CONFLICT (user_id) DO NOTHING
+    `, [client_id]);
+
+    await pool.query(`
+      INSERT INTO transacciones.billeteras (user_id, balance)
+      VALUES ($1, 0.00)
+      ON CONFLICT (user_id) DO NOTHING
+    `, [freelancer_id]);
+
+    await pool.query(`
+      INSERT INTO transacciones.pagos (sender_id, receiver_id, amount, project_id)
+      VALUES ($1, $2, $3, $4)
+    `, [client_id, freelancer_id, amount, id]);
+
+    await pool.query(`
+      UPDATE transacciones.billeteras
+      SET balance = balance - $1
+      WHERE user_id = $2
+    `, [amount, client_id]);
+
+    await pool.query(`
+      UPDATE transacciones.billeteras
+      SET balance = balance + $1
+      WHERE user_id = $2
+    `, [amount, freelancer_id]);
+
+    await pool.query(`
+      UPDATE proyectos.proyectos
+      SET status = 'Finalizado'
+      WHERE id = $1
+    `, [id]);
+
+    await pool.query('COMMIT');
+
+    res.status(200).json({ message: 'Pago realizado y proyecto finalizado con éxito' });
+
   } catch (err) {
-    console.error(err);
-    res.sendStatus(500);
+    await pool.query('ROLLBACK');
+    console.error('Error al finalizar y pagar:', err);
+    res.status(500).json({ message: 'Error interno del servidor', error: err.message });
   }
 });
 
@@ -1005,6 +1072,72 @@ app.post('/api/balance/actualizar', async (req, res) => {
     res.status(500).json({ error: 'Error actualizando balance' });
   }
 });
+
+app.post('/api/resenas', async (req, res) => {
+  const { reviewer_id, reviewed_id, project_id, rating, comment } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO reseñas.reseñas (reviewer_id, reviewed_id, project_id, rating, comment)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [reviewer_id, reviewed_id, project_id, rating, comment]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error al insertar reseña:', error);
+    res.status(500).json({ error: 'Error al insertar reseña' });
+  }
+});
+
+app.get('/api/proyectos/:id/freelancer', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT freelancer_id FROM proyectos.propuestas WHERE project_id = $1 AND status = $2 LIMIT 1',
+      [id, 'Aceptada']  
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No se encontró un freelancer asignado' });
+    }
+
+    res.json({ freelancer_id: result.rows[0].freelancer_id });
+  } catch (error) {
+    console.error('Error al obtener el freelancer:', error);
+    res.status(500).json({ error: 'Error al obtener el freelancer' });
+  }
+});
+
+app.get('/api/resenas/usuario/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const [reseñasResult, promedioResult] = await Promise.all([
+      pool.query(
+        `SELECT r.rating, r.comment, r.created_at, u.name AS nombre_reviewer, r.project_id
+         FROM reseñas.reseñas r
+         JOIN autenticacion.usuarios u ON r.reviewer_id = u.id
+         WHERE r.reviewed_id = $1
+         ORDER BY r.created_at DESC`,
+        [userId]
+      ),
+      pool.query(
+        `SELECT COALESCE(ROUND(AVG(r.rating)::numeric, 1), 0) AS promedio
+         FROM reseñas.reseñas r
+         WHERE r.reviewed_id = $1`,
+        [userId]
+      ),
+    ]);
+
+    res.json({
+      resenas: reseñasResult.rows,
+      calificacion_promedio: Number(promedioResult.rows[0].promedio),
+    });
+  } catch (error) {
+    console.error('Error al obtener reseñas por usuario:', error);
+    res.status(500).json({ error: 'Error al obtener reseñas por usuario' });
+  }
+});
+
 
 
 

@@ -2,13 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import Loader from './Cargando';
 import { useParams, useNavigate } from 'react-router-dom';
 import {ChatFooter} from "./BtnEnviar";
+import { API_URL } from '../constants';
 
 function ListaChats() {
   const { id } = useParams();
-  const API_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000'
-    : 'https://pruebasitflex.onrender.com';
-
   const navigate = useNavigate();
 
   // Separar los IDs
@@ -385,6 +382,7 @@ const estilos = {
     minHeight: 0,
     padding: '15px',
     backgroundColor: '#f9f9f9',
+    overflowY: 'auto',
   },
   mensaje: {
     maxWidth: '70%',

@@ -4,6 +4,7 @@ import Loader from "./Cargando";
 import { Link } from 'react-router-dom';
 import {BotonGuardar,BotonCancelar} from "./BotonGuardar";
 import { IrChat } from './BotonPostularAbrir';
+import { API_URL } from '../constants';
 
 function tiempoRelativo(fechaString) {
   const fecha = new Date(fechaString);
@@ -26,11 +27,6 @@ const Propuestas = () => {
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [usuarioActual, setUsuarioActual] = useState(null);
-
-  const API_URL = window.location.hostname === "localhost"
-    ? "http://localhost:5000"
-    : "https://pruebasitflex.onrender.com";
-
   const crearONavegarChat = async (usuarioLogueadoId, usuarioPropuestaId, esFreelancer) => {
   try {
     console.log("crearONavegarChat parámetros:", { usuarioLogueadoId, usuarioPropuestaId, esFreelancer });

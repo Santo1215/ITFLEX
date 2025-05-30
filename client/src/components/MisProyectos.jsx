@@ -7,6 +7,9 @@ import { Link } from 'react-router-dom';
 import {BotonGuardar,BotonCancelar} from "./BotonGuardar";
 import { IrChat } from './BotonPostularAbrir';
 import { ModalPago } from "./FormularioPostular";
+import { useBalance } from '../context/BalanceContext';
+import { API_URL, getUserId } from '../constants';
+const userId = getUserId();
 
 function tiempoRelativo(fechaString) {
   const fecha = new Date(fechaString);
@@ -25,17 +28,57 @@ function tiempoRelativo(fechaString) {
 }
 
 const MisProyectosListado = () => {
+  const { balanceUsuario, setBalanceUsuario } = useBalance();
   const [usuarioActual, setUsuarioActual] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [proyectos, setProyectos] = useState([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState(null);
   const [habilidadesExpandida, setHabilidadesExpandida] = useState({});
   const [modalPagoVisible, setModalPagoVisible] = useState(false);
-  const confirmarPagoYFinalizar = async () => {
-  // Aquí agregas la lógica para finalizar el proyecto (petición al backend, etc.)
-  setModalPagoVisible(false);
-  // Actualizar estados o recargar proyectos si es necesario
-  };
+  
+const confirmarPagoYFinalizar = async (id, monto, receiverId) => {
+  if (balanceUsuario < monto) {
+    alert("No tienes suficiente saldo para realizar este pago.");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/api/proyectos/${id}/finalizar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monto, receiverId })
+    });
+
+    if (response.ok) {
+      alert("Proyecto finalizado exitosamente.");
+      setModalPagoVisible(false);
+
+      // Actualizar balance
+      const res = await fetch(`${API_URL}/api/balance/usuario/${userId}`);
+      const data = await res.json();
+      setBalanceUsuario(data.balanceUsuario);
+
+      // Actualizar localmente el proyecto finalizado dentro del array proyectos
+      setProyectos((prevProyectos) =>
+        prevProyectos.map((proyecto) =>
+          proyecto.id === id ? { ...proyecto, status: "Finalizado" } : proyecto
+        )
+      );
+
+      // También actualizamos el proyecto seleccionado para que el detalle se vea actualizado
+      if (proyectoSeleccionado?.id === id) {
+        setProyectoSeleccionado((prev) => ({ ...prev, status: "Finalizado" }));
+      }
+    } else {
+      const data = await response.json();
+      console.error("Error al finalizar:", data);
+      alert("Error al confirmar el pago.");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Hubo un problema al conectar con el servidor.");
+  }
+};
 
   const toggleHabilidades = (postulacionId) => {
   setHabilidadesExpandida((prev) => ({
@@ -59,10 +102,6 @@ const MisProyectosListado = () => {
       setPostulaciones([]);
     }
   };
-  const API_URL =
-  window.location.hostname === "localhost"
-    ? "http://localhost:5000"
-    : "https://pruebasitflex.onrender.com";
 
 const aceptarPropuesta = async (postulacionId) => {
   try {
@@ -182,8 +221,6 @@ const rechazarPropuesta = async (postulacionId) => {
  if (cargando) return <Loader />;
  if (!cargando && proyectos.length === 0) return <p>No tienes proyectos publicados aún.</p>;
  
-console.log("Postulación aceptada:", postulacionAceptada);
-console.log("Proyecto finalizado:", proyectoSeleccionado.status);
   return (
     <div className="proyectos-container">
       <div className="proyectos-listado-izquierdo">
@@ -231,8 +268,9 @@ console.log("Proyecto finalizado:", proyectoSeleccionado.status);
         })}
 
       </div>
-<ModalPago isOpen={modalPagoVisible} onClose={() => setModalPagoVisible(false)} onConfirm={confirmarPagoYFinalizar}/> 
-      {proyectoSeleccionado && (
+    <ModalPago isOpen={modalPagoVisible} onClose={() => setModalPagoVisible(false)} onPagoRealizado={confirmarPagoYFinalizar} 
+    projectId={proyectoSeleccionado.id} receiverId={proyectoSeleccionado.freelancer_id} />
+      {proyectoSeleccionado && (  
         <div className="proyecto-detalle">
           <h2>{proyectoSeleccionado.title}</h2>
           <div className="detalle-header">
@@ -253,16 +291,16 @@ console.log("Proyecto finalizado:", proyectoSeleccionado.status);
           </div>
 
           <div className="descripcion">
-            <p>{proyectoSeleccionado.description || "Descripción no disponible"}</p>
+            <p>{proyectoSeleccionado.description || "Descripción no disponible"}</p>          
           </div>
-
+                
           {proyectoSeleccionado.status !== "Finalizado" && (
             <BtnVerPostu
               texto={mostrarPostulantes ? "Ocultar postulantes" : "Ver postulantes"}
               onClick={manejarClickPostulantes}
               activo={mostrarPostulantes}
             />
-          )}
+          )}       
           {proyectoSeleccionado.status === "Finalizado" && postulacionAceptada ? (
             <div className="postulacion-card">
               <h3>Freelancer seleccionado</h3>
@@ -348,7 +386,8 @@ console.log("Proyecto finalizado:", proyectoSeleccionado.status);
           )}
         </div>
       )}
-    </div>
+      
+    </div> 
   );
 };
 
