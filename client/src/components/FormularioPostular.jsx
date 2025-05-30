@@ -9,7 +9,6 @@ export const FormularioPostulacion = ({ proyecto, usuarioActual, postulados, set
   const presupuestoMaximo = proyecto.budget * 2;
 
   const [presupuestoEstimado, setPresupuestoEstimado] = useState("");
-  const MAX_DAYS = 365;
   const handlePresupuestoChange = (e) => {
     const valor = e.target.value;
     if (valor <= presupuestoMaximo) {

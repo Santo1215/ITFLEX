@@ -165,7 +165,6 @@ app.get("/api/proyectos", async (req, res) => {
     const proyectosResult = await pool.query(`
       SELECT 
         p.*, 
-        365 AS max_wait_days,  
         u.name AS nombre_cliente,
         COALESCE(ROUND((
           SELECT AVG(r.rating)::numeric
