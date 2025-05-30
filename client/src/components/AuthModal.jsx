@@ -2,7 +2,10 @@ import { useState } from 'react';
 import styles from '../assets/styles/AuthModal.module.css';
 
 function AuthModal({ isOpen, type, onClose }) {
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://itflex.onrender.com';
+        
     const [formData, setFormData] = useState({
         email: '',
         password: '',
