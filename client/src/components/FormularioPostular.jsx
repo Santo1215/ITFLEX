@@ -9,7 +9,7 @@ export const FormularioPostulacion = ({ proyecto, usuarioActual, postulados, set
   const presupuestoMaximo = proyecto.budget * 2;
 
   const [presupuestoEstimado, setPresupuestoEstimado] = useState("");
-
+  const MAX_DAYS = 365;
   const handlePresupuestoChange = (e) => {
     const valor = e.target.value;
     if (valor <= presupuestoMaximo) {
@@ -50,12 +50,12 @@ export const FormularioPostulacion = ({ proyecto, usuarioActual, postulados, set
               <input
                 className="input__field"
                 min={1}
-                max={proyecto.max_wait_days}
+                max={MAX_DAYS}
                 type="number"
                 placeholder="Ingrese los días estimados para la entrega"
                 value={dias}
-                 onChange={(e) => { const valor = parseInt(e.target.value); if ((valor >= 1 && valor <= proyecto.max_wait_days) || e.target.value === "") {
-      setDias(e.target.value);} else { alert(`El máximo de días permitido es ${proyecto.max_wait_days}`); }}} required/>
+                 onChange={(e) => { const valor = parseInt(e.target.value); if ((valor >= 1 && valor <= MAX_DAYS) || e.target.value === "") {
+      setDias(e.target.value);} else { alert(`El máximo de días permitido es ${MAX_DAYS}`); }}} required/>
             </div>
             <div className="input">
               <label className="input__label">Descripción</label>
