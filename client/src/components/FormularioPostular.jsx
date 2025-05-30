@@ -49,11 +49,13 @@ export const FormularioPostulacion = ({ proyecto, usuarioActual, postulados, set
               <label className="input__label">Días estimados</label>
               <input
                 className="input__field"
+                min={1}
+                max={proyecto.max_wait_days}
                 type="number"
                 placeholder="Ingrese los días estimados para la entrega"
                 value={dias}
-                onChange={(e) => setDias(e.target.value)} required
-              />
+                 onChange={(e) => { const valor = parseInt(e.target.value); if ((valor >= 1 && valor <= proyecto.max_wait_days) || e.target.value === "") {
+      setDias(e.target.value);} else { alert(`El máximo de días permitido es ${proyecto.max_wait_days}`); }}} required/>
             </div>
             <div className="input">
               <label className="input__label">Descripción</label>

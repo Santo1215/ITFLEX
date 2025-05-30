@@ -129,14 +129,6 @@ export default function CrearProyecto({ onProyectoCreado }) {
           />
         </div>
 
-        <div className="input-group">
-          <label className="input-label">Agregar archivos</label>
-          <input
-            type="file"
-            className="input-field"
-          />
-        </div>
-
         <div className="button-group">
           <a style={{ textDecoration: 'none' }} href="/Home"><BotonCancelar/></a>
           <button type="submit" className="button submit-button">
